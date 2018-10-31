@@ -37,7 +37,7 @@ categories = {"discovery", "safe"}
 -- end
 -- The Rule Section --
 hostrule=function(host)
-	print("hostrule:",host.ip)
+	--print("hostrule:",host.ip)
 	return true
 end
 portrule = function(host)
@@ -75,14 +75,14 @@ local function icmp_tole_listener(signal,ip)
 				--print(k,v)
 			end
 			if k=="ip_src" then
-				print(ip,dst_ip,v)
+				--print("#",ip,dst_ip,v)
 			end
 		end
 	else
 		--print("no icmp ttl exceeded packet back!")
 	end
 	
-	--print("get_last_hop_count:",get_last_hop_count)
+	print("get_last_hop_count:",get_last_hop_count)
 	icmp_tole_rec_socket:close()
 	condvar("signal")
 end
@@ -109,7 +109,7 @@ local function icmp_pu_listener(send_l3_sock,signal,ip)
 		--stdnse.sleep(10)
 		--print("parse for getting left ttl in packet...")
 		local l3_icmp_pu_packet = packet.Packet:new(l3_icmp_pu_data, #l3_icmp_pu_data)
-		print("icmp pu:",ip,l3_icmp_pu_packet.ip_src,l3_icmp_pu_packet.ip_dst)
+		print("icmp pu:",ip,l3_icmp_pu_packet.ip_src,l3_icmp_pu_packet.ip_dst,l3_icmp_pu_packet.ip_offset)
 		local raw_sender_data_in_l3_icmp_pu_packet=l3_icmp_pu_data:sub(l3_icmp_pu_packet.icmp_payload_offset+1)
 		--print("icmp payload size:",#raw_sender_data_in_l3_icmp_pu_packet)
 		local raw_sender_packet_in_l3_icmp_pu_packet=packet.Packet:new(raw_sender_data_in_l3_icmp_pu_packet,#raw_sender_data_in_l3_icmp_pu_packet)
@@ -136,7 +136,7 @@ local function icmp_pu_listener(send_l3_sock,signal,ip)
 		--print("no icmp port unreachable packet back!")
 	---local p2=packet.Packet:build_ip_packet(p1.ip_src,p1.ip_dst,"123",0,0xbeef,0,left_ttl,"1")
 	end
-	--print("get icmp_pu_count:",icmp_pu_count)
+	print("get icmp_pu_count:",icmp_pu_count)
 	icmp_pu_rec_socket:close()
 	condvar("signal")
 end
@@ -144,9 +144,7 @@ end
 --action = function(host, port)
 
 action = function(host)
-	--print("action:",host.ip)
-host_ip=host.ip
---print("target:",host_ip)
+print("action:",host.ip)
 --print("**************************************************")
 --建立发送l3层报文的raw socket
 --用于发送设置了ttl的探测末跳报文
@@ -161,7 +159,7 @@ icmp_pu_listener_signal['status']=0
 -- @param icmp_pu_listener function name
 -- @param send_l3_sock l3 layer raw socket
 -- @param icmp_pu_listener_signal listener stop signal
-local icmp_pu_listener_handler=stdnse.new_thread(icmp_pu_listener,send_l3_sock,icmp_pu_listener_signal,host_ip)
+local icmp_pu_listener_handler=stdnse.new_thread(icmp_pu_listener,send_l3_sock,icmp_pu_listener_signal,host.ip)
 
 local icmp_tole_listener_signal={}
 local icmp_tole_listener_condvar = nmap.condvar(icmp_tole_listener_signal)
@@ -170,36 +168,40 @@ icmp_tole_listener_signal['status']=0
 --
 -- @param icmp_pu_listener function name
 -- @param icmp_tole_listener_signal listener stop signal
-local icmp_tole_listener_handler=stdnse.new_thread(icmp_tole_listener,icmp_tole_listener_signal,host_ip)
+local icmp_tole_listener_handler=stdnse.new_thread(icmp_tole_listener,icmp_tole_listener_signal,host.ip)
 
 stdnse.sleep(1)
 --建立基于udp的socket
 --用于发送udp大端口报文
 local send_udp_socket=nmap.new_socket("udp")
-send_udp_socket:sendto(host_ip,65534,"")
-send_udp_socket:close()
---stdnse.sleep(5)
+send_udp_socket:sendto(host.ip,65534,"")
+
+stdnse.sleep(2)
 -- icmp_tole_listener_signal['status']=1
 -- icmp_pu_listener_signal['status']=1
-repeat
-	if coroutine.status(icmp_tole_listener_handler)=="dead" then
-		icmp_tole_listener_handler=nil
-	else
-		--print("wait icmp time to live exceeded listener end...")
-		icmp_tole_listener_condvar("wait")
-		--print("wait icmp test...")
-	end
-until icmp_tole_listener_handler==nil
+
 repeat
 	if coroutine.status(icmp_pu_listener_handler)=="dead" then
 		icmp_pu_listener_handler=nil
 	else 
-		--print("wait for icmp port unreachable listener end...")
+		--send again udp
+		send_udp_socket:sendto(host.ip,65534,"")
+		print("wait for icmp port unreachable listener end...")
 		icmp_pu_listener_condvar("wait")
 	end
 until icmp_pu_listener_handler==nil
-
+repeat
+	if coroutine.status(icmp_tole_listener_handler)=="dead" then
+		icmp_tole_listener_handler=nil
+	else
+		print("wait icmp time to live exceeded listener end...")
+		icmp_tole_listener_condvar("wait")
+		--print("wait icmp test...")
+	end
+until icmp_tole_listener_handler==nil
 send_l3_sock:ip_close()
+send_udp_socket:close()
+
 --print("**************************************************")
 return true
 end

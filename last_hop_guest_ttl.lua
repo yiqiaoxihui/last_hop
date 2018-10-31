@@ -189,6 +189,7 @@ local function send_to_last_hop(iface,send_l3_sock,dst_ip,ttl)
 	ip:build_icmp_echo_request()
 	ip:build_icmp_header()
 	ip:build_ip_packet()
+	ip.echo_data = "a"
 	ip.ip_offset=0
 	ip:ip_set_ttl(ttl)
     -- local pktbin = bin.pack("H",
@@ -241,6 +242,40 @@ local function get_distance_from_target_to_source(left_ttl)
 	end
 	return ttl
 end
+
+local function guest_network_distance_by_traceroute(end_ttl,error_ttl,iface,send_l3_sock,ip,icmp_echo_listener_signal,icmp_tole_listener_signal)
+	local mid_ttl
+	local times=0
+	local result={}
+	stdnse.sleep(3)
+	for i=error_ttl+1, end_ttl do
+		print("\n\nreset ttl",i)
+		send_to_last_hop(iface,send_l3_sock,ip,i)
+		stdnse.sleep(2)
+		if icmp_echo_listener_signal['receive']==true then
+			print("reply icmp echo")
+			icmp_echo_listener_signal['receive']=nil
+			result[i]="echo"
+			mid_ttl=i
+			break
+		elseif icmp_tole_listener_signal['receive']==true then
+			print("receive icmp time limit")
+			result[i]="limit"
+			icmp_tole_listener_signal['receive']=nil
+		else
+			result[i]="none"
+		end
+	end
+	if result[mid_ttl]=="echo" and result[mid_ttl-1]=="limit" then
+		--print("get ttl by traceroute",mid_ttl)
+		return mid_ttl
+	else
+		--print("get ttl by traceroute fail",mid_ttl)
+		return -1
+	end
+
+	-- body
+end
 --猜测到目标的网络距离
 --
 -- @param iface
@@ -257,11 +292,11 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 	local status=true
 	local times=0
 	local deviation_right,deviation_left
-	local deviation_distance = 5
+	local deviation_distance = 6	--or 5
 	pp.ip_bin_dst=packet.iptobin(ip)
 	pp.ip_bin_src = packet.iptobin(iface.address)
 	--pp.echo_id = 12
-	--pp.echo_data = "a"
+	pp.echo_data = "a"
 	pp.ip_offset=0
 	pp:build_icmp_echo_request()
 	pp:build_icmp_header()
@@ -269,8 +304,9 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 	--根据目标到源的剩余ttl，初步估计源到目标的网络距离
 	pp:ip_set_ttl(64)
 	send_l3_sock:ip_send(pp.buf)
-	stdnse.sleep(1)
+	stdnse.sleep(2)
 	if icmp_echo_listener_signal['receive']==true then
+		icmp_echo_listener_signal['receive']=nil		--error:forget reset to nil,cause error guess
 		ttl_from_target_to_source=get_distance_from_target_to_source(icmp_echo_listener_signal['left_ttl'])
 		--print("guest ttl",ttl_from_target_to_source)
 		deviation_right=ttl_from_target_to_source-30+deviation_distance
@@ -293,12 +329,19 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 	else
 		print("* ",ip," no receive first echo reply!")
 	end
-	print("max,min:",max_ttl,min_ttl)
+	print("max,min:",max_ttl,min_ttl,ttl_from_target_to_source)
 	--print("ip offset：",pp.ip_offset)
 
 	--23.197.209.17
+	-- min_ttl=14
+	-- max_ttl=24
+	local left_ttl=min_ttl
+	local right_ttl=max_ttl
+	local deviation_fail=0
+	local time_limit_ttl=-1
+	local echo_reply_ttl=-1
 	while true do
-		mid_ttl=math.floor((max_ttl+min_ttl)/2)
+		mid_ttl=math.floor((left_ttl+right_ttl)/2)
 
 		print("\n\nset ttl:",mid_ttl)
 		pp:ip_set_ttl(mid_ttl)
@@ -307,39 +350,68 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 		stdnse.sleep(1)
 		if icmp_echo_listener_signal['receive']==true then
 			print("reply icmp echo")
-			max_ttl=mid_ttl
+			right_ttl=mid_ttl
+			echo_reply_ttl=mid_ttl
 			icmp_echo_listener_signal['receive']=nil
+			if mid_ttl<=1 then
+				break
+			end
 		elseif icmp_tole_listener_signal['receive']==true then
 			print("receive icmp time limit")
-			if mid_ttl>29 then
-				mid_ttl=0
-				print("* ",ip," hop more than 30")
-				break
-			else
-				min_ttl=mid_ttl+1
+			-- if mid_ttl>29 then
+			-- 	mid_ttl=-1
+			-- 	print("* ",ip," hop more than 30")
+			-- 	break
+			-- else
+				left_ttl=mid_ttl+1
+				time_limit_ttl=mid_ttl
 				icmp_tole_listener_signal['receive']=nil
-			end
+			-- end
 		else
 			print("send again")
 			times=times+1
-			mid_ttl=mid_ttl+0.1		--ip:90.196.109.225,
+			--mid_ttl=mid_ttl+0.1		--ip:90.196.109.225, left_ttl=9,right_ttl=10, mid_ttl=9,no any reply
 		end
-		if (mid_ttl==min_ttl) or (max_ttl==min_ttl) then
-			mid_ttl=min_ttl
+
+		if right_ttl==min_ttl then				--all echo reply
+			print(ip,"set min_ttl too big")
+			left_ttl=min_ttl-deviation_distance
+			if left_ttl<=0 then
+				left_ttl=1
+			end
+			--mid_ttl=left_ttl  	--traceroute from mid_ttl to right_ttl
+			min_ttl=left_ttl
+			--deviation_fail=1
+			--break
+		elseif left_ttl==max_ttl then		--all time limit,left_ttl=max_ttl=mid_ttl+1
+			print(ip,"set max_ttl too small")
+			right_ttl=max_ttl+deviation_distance  --for traceroute from mid_ttl to right_ttl
+			max_ttl=right_ttl
+			--deviation_fail=1
+			--break
+		elseif time_limit_ttl+1==echo_reply_ttl then					--(mid_ttl==left_ttl)针对上次limit,而本次echo;
+			mid_ttl=echo_reply_ttl 										-- or (right_ttl==left_ttl)针对本次limit后，left_ttl=mid_ttl+1=right_ttl
 			print(ip,"guest ttl:",mid_ttl)
 			break
 		end
 		if times>4 then
-			mid_ttl=0
-			print("* ",ip," try times and exit!")
 			break
 		end
 	end
+	mid_ttl=math.floor(mid_ttl)
+	if times>4 then
+		mid_ttl=guest_network_distance_by_traceroute(right_ttl,mid_ttl,iface,send_l3_sock,ip,icmp_echo_listener_signal,icmp_tole_listener_signal)
+		if mid_ttl>0 then
+			print(mid_ttl,ip,"traceroute guess success!")
+		else
+			print(ip," traceroute guess fail!")
+		end
+	end
+
 	icmp_echo_listener_signal['status']=1
 	icmp_tole_listener_signal['guest']=0
 	--print("guest end")
 	return mid_ttl
-
 	-- body
 end
 
@@ -392,18 +464,18 @@ action = function(host)
 	local icmp_echo_listener_handler=stdnse.new_thread(icmp_echo_listener,icmp_echo_listener_signal,host.ip)
 
 	stdnse.sleep(1)
-
 	local guest_ttl=guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icmp_tole_listener_signal,host.ip)
 
-	if guest_ttl>0 then
-		print(host.ip,"send packet to get last hop...")
-		
+	if guest_ttl>1 then
+		print(host.ip,guest_ttl,"send packet to get last hop...")
 		send_to_last_hop(iface,send_l3_sock,host.ip,guest_ttl-1)
+		stdnse.sleep(1)
+	elseif guest_ttl==1 then
+		print(host.ip,"target in intranet ")
 	else
-		print("* ",host.ip," guest ttl fail...")
+		print(host.ip," guest ttl fail...")
 		--return false
 	end
-	stdnse.sleep(2)
 
 	icmp_tole_listener_signal['status']=1
 	--icmp_pu_listener_signal['status']=1
