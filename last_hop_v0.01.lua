@@ -53,7 +53,7 @@ local function icmp_tole_listener(signal)
 	local icmp_tole_rec_socket=nmap.new_socket()
 	local capture_rule="(icmp[0]=11) and (icmp[1]=0)"
 	icmp_tole_rec_socket:pcap_open("eno2",128,false,capture_rule)
-	--icmp_tole_rec_socket:set_timeout(15000)
+	icmp_tole_rec_socket:set_timeout(15000)
 	local status,len,l2_icmp_t_l,l3_icmp_tol,time
 	status=true
 	local condvar=nmap.condvar(signal)
@@ -61,6 +61,7 @@ local function icmp_tole_listener(signal)
 	while signal['status']==0  do
 		status,len,l2_icmp_t_l,l3_icmp_tol,time=icmp_tole_rec_socket:pcap_receive()
 		if status then
+			--stdnse.sleep(5)
 			get_last_hop_count=get_last_hop_count+1
 			--print("\n\n\nreceive icmp time to live exceeded packet...")
 			--print("parse packet...")
@@ -74,7 +75,7 @@ local function icmp_tole_listener(signal)
 					--print(k,v)
 				end
 				if k=="ip_src" then
-					print(dst_ip,v)
+					--print(dst_ip,v)
 				end
 			end
 		else
@@ -93,8 +94,8 @@ end
 local function icmp_pu_listener(send_l3_sock,signal)
 	print("\nbegin icmp port unreachable listener...")
 	local icmp_pu_rec_socket=nmap.new_socket()
-	icmp_pu_rec_socket:pcap_open("eno2",70,false,"(icmp[0]=3) and (icmp[1]=3)")
-	--icmp_pu_rec_socket:set_timeout(15000)
+	icmp_pu_rec_socket:pcap_open("eno2",70,false,"(icmp[0]=3) and (icmp[1]=3) and (icmp[30]=0xff) and (icmp[31]=0xfe)")
+	icmp_pu_rec_socket:set_timeout(15000)
 	local condvar = nmap.condvar(signal)
 	local icmp_pu_count=0
 	local status,len,l2_icmp_pu_data,l3_icmp_pu_data,time
@@ -126,6 +127,7 @@ local function icmp_pu_listener(send_l3_sock,signal)
 			else
 				left_ttl=64-raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl
 			end
+			--print("icmp pu:",l3_icmp_pu_packet.ip_src,l3_icmp_pu_packet.ip_dst)
 			--print("get left_ttl value:",raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl)
 			--print("set new ttl:",left_ttl)
 			--print("send new packet for sniffer last hop...")
@@ -133,7 +135,7 @@ local function icmp_pu_listener(send_l3_sock,signal)
 			---print("packet.buf len:",#raw_sender_packet_in_l3_icmp_pu_packet.buf)
 			send_l3_sock:ip_send(raw_sender_packet_in_l3_icmp_pu_packet.buf)
 		else
-			print("no icmp port unreachable packet back!")
+			--print("no icmp port unreachable packet back!")
 		---local p2=packet.Packet:build_ip_packet(p1.ip_src,p1.ip_dst,"123",0,0xbeef,0,left_ttl,"1")
 		end
 	end
@@ -187,8 +189,8 @@ for line in io.lines(ip_file) do
 	--print(line,":send udp packet, port:65534")
 	send_udp_socket:sendto(ip[1],65534,"")
 	ip_count=ip_count+1
-	if ip_count % 128==0 then
-		print("send upd sleep 10s...")
+	if ip_count % 101==0 then
+		--print("send upd sleep 10s...")
 		stdnse.sleep(4)
 	end
 end

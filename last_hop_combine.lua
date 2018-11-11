@@ -216,7 +216,7 @@ local function guest_network_distance_by_traceroute(end_ttl,error_ttl,iface,send
 	for i=error_ttl+1, end_ttl do
 		print("\n\nreset ttl",i)
 		set_ttl_to_ping(iface,send_l3_sock,ip,i)
-		--stdnse.sleep(2)
+		stdnse.sleep(2)
 		if icmp_echo_listener_signal['receive']==true then
 			print(ip,i,"traceroute reply icmp echo")
 			icmp_echo_listener_signal['receive']=nil
@@ -248,7 +248,7 @@ end
 -- @param ip:target ip
 function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icmp_tole_listener_signal,ip)
 	local pp=packet.Packet:new()
-	local ttl_from_target_to_source
+	local ttl_from_target_to_source=0
 	local max_ttl = 30
 	local min_ttl=1
 	local mid_ttl
@@ -310,7 +310,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 		pp:ip_set_ttl(mid_ttl)
 
 		send_l3_sock:ip_send(pp.buf)
-		stdnse.sleep(1)
+		stdnse.sleep(2)
 		if icmp_echo_listener_signal['receive']==true then
 			print(ip,mid_ttl,"reply icmp echo")
 			right_ttl=mid_ttl
@@ -366,8 +366,9 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 			print(ip," traceroute fail!")
 		end
 	end
-
-	--print("guest end")
+	if mid_ttl>1 and ttl_from_target_to_source>0 then 
+		print(ip,mid_ttl,ttl_from_target_to_source,"difference:",mid_ttl-ttl_from_target_to_source)
+	end
 	return mid_ttl
 end
 
@@ -415,7 +416,7 @@ action = function(host)
 	--方法1.发送udp大端口报文，从icmp端口不可达报文中提取网络距离
 	local send_udp_socket=nmap.new_socket("udp")
 	send_udp_socket:sendto(host.ip,65534,"")	
-	stdnse.sleep(2)		--test,1s too short to get last_hop message
+	stdnse.sleep(5)		--test,1s too short to get last_hop message
 	--成功收到最后一跳
 	if icmp_tole_listener_signal['last_hop']==1 then
 		print(host.ip,"udp_to_get_last_hop")
@@ -448,11 +449,21 @@ action = function(host)
 			print(host.ip,guest_ttl,"guest_ttl_success,send packet to get last hop...")
 			set_ttl_to_ping(iface,send_l3_sock,host.ip,guest_ttl-1)
 			stdnse.sleep(1)			--needtotest
+			if icmp_tole_listener_signal['last_hop']==0 then
+				print(host.ip,"have guessed ttl,but no get last_hop")
+				set_ttl_to_ping(iface,send_l3_sock,host.ip,guest_ttl-1)
+				stdnse.sleep(1)
+			else
+				print("get last hop by guess success")
+			end
 		elseif guest_ttl==1 then
 			print(host.ip,"target in intranet ")
 		else
 			print(host.ip," guest_ttl_fail...")
 			--return false
+		end
+		if guest_ttl>1 and icmp_tole_listener_signal['last_hop']==0 then
+			print(host.ip,"have guessed ttl,but no get last_hop again")
 		end
 		icmp_tole_listener_signal['status']=1
 		repeat
@@ -476,16 +487,6 @@ action = function(host)
 			--print("wait icmp test...")
 		end
 	until icmp_tole_listener_handler==nil
-
-	-- repeat
-	-- 	if coroutine.status(icmp_pu_listener_handler)=="dead" then
-	-- 		icmp_pu_listener_handler=nil
-	-- 	else 
-	-- 		--send again udp
-	-- 		print("wait for icmp port unreachable listener end...")
-	-- 		icmp_pu_listener_condvar("wait")
-	-- 	end
-	-- until icmp_pu_listener_handler==nil
 
 	send_l3_sock:ip_close()
 
