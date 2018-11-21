@@ -46,67 +46,14 @@ portrule = function(host)
 	print("portrule:",host.ip)
 --return port.state=="closed" 
 end
---建立监听线程
---用于接受icmp端口不可达包
---
--- @param icmp_pu_listener function name
--- @param send_l3_sock l3 layer raw socket
-local function icmp_pu_listener(send_l3_sock,signal,ip)
-	--print("\nbegin icmp port unreachable listener...")
-	local icmp_pu_rec_socket=nmap.new_socket()
-	local capture_rule="(icmp[0]=3) and (icmp[1]=3) and host "..ip
-	icmp_pu_rec_socket:pcap_open("eno2",70,false,capture_rule)
-	icmp_pu_rec_socket:set_timeout(25000)
-	local condvar = nmap.condvar(signal)
-	local icmp_pu_count=0
-	local status,len,l2_icmp_pu_data,l3_icmp_pu_data,time
-	--pcap_receive()方法似乎不会因收包后的解析产生的延迟而错过网络中到达的数据包
-	--使用stdnse.sleep(10)故意延迟，仍然未遗漏数据包
-	status,len,l2_icmp_pu_data,l3_icmp_pu_data,time=icmp_pu_rec_socket:pcap_receive()
-	if status then
-		icmp_pu_count=icmp_pu_count+1
-		--print("\n\nreceive icmp port unreachable packet...")
-		--stdnse.sleep(10)
-		--print("parse for getting left ttl in packet...")
-		local l3_icmp_pu_packet = packet.Packet:new(l3_icmp_pu_data, #l3_icmp_pu_data)
-		print("icmp pu:",ip,l3_icmp_pu_packet.ip_src,l3_icmp_pu_packet.ip_dst)
-		local raw_sender_data_in_l3_icmp_pu_packet=l3_icmp_pu_data:sub(l3_icmp_pu_packet.icmp_payload_offset+1)
-		--print("icmp payload size:",#raw_sender_data_in_l3_icmp_pu_packet)
-		local raw_sender_packet_in_l3_icmp_pu_packet=packet.Packet:new(raw_sender_data_in_l3_icmp_pu_packet,#raw_sender_data_in_l3_icmp_pu_packet)
 
-		local left_ttl=0
-		if raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl>64
-		then
-			if raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl>128
-			then
-				left_ttl=256-raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl
-			else
-				left_ttl=128-raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl
-			end
-		else
-			left_ttl=64-raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl
-		end
-		--print("get left_ttl value:",raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl)
-		--print("set new ttl:",left_ttl)
-		--print("send new packet for sniffer last hop...")
-		raw_sender_packet_in_l3_icmp_pu_packet:ip_set_ttl(left_ttl)
-		---print("packet.buf len:",#raw_sender_packet_in_l3_icmp_pu_packet.buf)
-		send_l3_sock:ip_send(raw_sender_packet_in_l3_icmp_pu_packet.buf)
-	else
-		--print("no icmp port unreachable packet back!")
-	---local p2=packet.Packet:build_ip_packet(p1.ip_src,p1.ip_dst,"123",0,0xbeef,0,left_ttl,"1")
-	end
-	--print("get icmp_pu_count:",icmp_pu_count)
-	icmp_pu_rec_socket:close()
-	condvar("signal")
-end
 --建立监听线程
 --用于接受icmp echo 响应报文
-local function icmp_echo_listener(signal,ip)
+local function icmp_echo_listener(signal,ip,iface)
 	--print("\nbegin icmp time to live exceeded packet listener...")
 	local icmp_echo_rec_socket=nmap.new_socket()
 	local capture_rule="(icmp[0]=0) and (icmp[1]=0) and host "..ip
-	icmp_echo_rec_socket:pcap_open("eno2",128,false,capture_rule)
+	icmp_echo_rec_socket:pcap_open(iface.device,128,false,capture_rule)
 	icmp_echo_rec_socket:set_timeout(5000)
 	local status,len,l2_icmp_e_r,l3_icmp_echo_reply,time
 	local condvar=nmap.condvar(signal)
@@ -133,13 +80,13 @@ end
 --建立监听线程
 --用于接受icmp生存时间过期报文
 --从中提取末跳路由器信息
-local function icmp_tole_listener(signal,ip)
+local function icmp_tole_listener(signal,ip,iface)
 	--print("\nbegin icmp time to live exceeded packet listener...")
 	local icmp_tole_rec_socket=nmap.new_socket()
 	local str_hex_ip=ipOps.todword(ip)
 	--print("str hex ip:",str_hex_ip)
 	local capture_rule="(icmp[0]=11) and (icmp[1]=0) and icmp[24:4]="..str_hex_ip
-	icmp_tole_rec_socket:pcap_open("eno2",128,false,capture_rule)
+	icmp_tole_rec_socket:pcap_open(iface.device,128,false,capture_rule)
 	icmp_tole_rec_socket:set_timeout(5000)
 	local status,len,l2_icmp_t_l,l3_icmp_tol,time
 	local condvar=nmap.condvar(signal)
@@ -181,8 +128,8 @@ local function fail(err) return ("\n  ERROR: %s"):format(err or "") end
 
 local function set_ttl_to_ping(iface,send_l3_sock,dst_ip,ttl)
 	local ip=packet.Packet:new()
-	ip.ip_bin_dst=packet.iptobin(dst_ip)
-	ip.ip_bin_src = packet.iptobin(iface.address)
+	ip.ip_bin_dst=ipOps.ip_to_str(dst_ip)
+	ip.ip_bin_src = ipOps.ip_to_str(iface.address)
 	ip:build_icmp_echo_request()
 	ip:build_icmp_header()
 	ip:build_ip_packet()
@@ -213,9 +160,9 @@ local function guest_network_distance_by_traceroute(end_ttl,error_ttl,iface,send
 	local echo_reply_ttl=-1
 	stdnse.sleep(2)
 	for i=error_ttl+1, end_ttl do
-		print("\n\nreset ttl",i)
+		print(ip,"reset ttl by traceroute",i)
 		set_ttl_to_ping(iface,send_l3_sock,ip,i)
-		stdnse.sleep(2) 	--test,必须等待1-2秒
+		stdnse.sleep(1) 	--test,必须等待1-2秒
 		if icmp_echo_listener_signal['receive']==true then
 			print(ip,i,"traceroute reply icmp echo")
 			icmp_echo_listener_signal['receive']=nil
@@ -247,16 +194,16 @@ end
 -- @param ip:target ip
 function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icmp_tole_listener_signal,ip)
 	local pp=packet.Packet:new()
-	local ttl_from_target_to_source
+	local ttl_from_target_to_source=0
 	local max_ttl = 30
 	local min_ttl=1
 	local mid_ttl
 	local status=true
 	local times=0
 	local deviation_right,deviation_left
-	local deviation_distance = 6	--or 5
-	pp.ip_bin_dst=packet.iptobin(ip)
-	pp.ip_bin_src = packet.iptobin(iface.address)
+	local deviation_distance = 5	--or 5
+	pp.ip_bin_dst=ipOps.ip_to_str(ip)
+	pp.ip_bin_src = ipOps.ip_to_str(iface.address)
 	--pp.echo_id = 12
 	pp.echo_data = "a"
 	pp.ip_offset=0
@@ -268,6 +215,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 	send_l3_sock:ip_send(pp.buf)
 	stdnse.sleep(2)
 	if icmp_echo_listener_signal['receive']==true then
+		print(ip,"first predict ttl by ping success,receive reply!")
 		icmp_echo_listener_signal['receive']=nil		--error:forget reset to nil,cause error guess
 		ttl_from_target_to_source=get_distance_from_target_to_source(icmp_echo_listener_signal['left_ttl'])
 		--print("guest ttl",ttl_from_target_to_source)
@@ -281,7 +229,6 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 		end
 		min_ttl=ttl_from_target_to_source-deviation_right-deviation_distance+deviation_left
 		max_ttl=ttl_from_target_to_source-deviation_right+deviation_distance+deviation_left
-
 		if min_ttl<1 then
 			min_ttl=1
 		end
@@ -289,14 +236,9 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 			max_ttl=30
 		end
 	else
-		print("* ",ip," no receive first echo reply!")
+		print(ip,"first predict ttl by ping fail,no receive reply!")
 	end
-	print("max,min:",max_ttl,min_ttl,ttl_from_target_to_source)
-	--print("ip offset：",pp.ip_offset)
-
-	--23.197.209.17
-	-- min_ttl=14
-	-- max_ttl=24
+	print(ip,"max,min:",max_ttl,min_ttl,ttl_from_target_to_source)
 	local left_ttl=min_ttl
 	local right_ttl=max_ttl
 	local deviation_fail=0
@@ -305,7 +247,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 	while true do
 		mid_ttl=math.floor((left_ttl+right_ttl)/2)
 
-		print("\n\nset ttl:",mid_ttl)
+		print(ip,"set ttl and send:",mid_ttl)
 		pp:ip_set_ttl(mid_ttl)
 
 		send_l3_sock:ip_send(pp.buf)
@@ -320,15 +262,15 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 			end
 		elseif icmp_tole_listener_signal['receive']==true then
 			print(ip,mid_ttl,"receive icmp time limit")
-			-- if mid_ttl>29 then
-			-- 	mid_ttl=-1
-			-- 	print("* ",ip," hop more than 30")
-			-- 	break
-			-- else
+			if mid_ttl>35 then 			--认为没有大于35跳的路由
+				mid_ttl=-1
+				print(ip," hop more than 35")
+				break
+			else
 				left_ttl=mid_ttl+1
 				time_limit_ttl=mid_ttl
 				icmp_tole_listener_signal['receive']=nil
-			-- end
+			end
 		else
 			print(ip,mid_ttl,"send again")
 			times=times+1
@@ -343,37 +285,39 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 			end
 			--mid_ttl=left_ttl  	--traceroute from mid_ttl to right_ttl
 			min_ttl=left_ttl
-			--deviation_fail=1
-			--break
 		elseif left_ttl==max_ttl then		--all time limit,left_ttl=max_ttl=mid_ttl+1
 			print(ip,"set max_ttl too small")
 			right_ttl=max_ttl+deviation_distance  --for traceroute from mid_ttl to right_ttl
 			max_ttl=right_ttl
-			--deviation_fail=1
-			--break
 		elseif time_limit_ttl+1==echo_reply_ttl then					--(mid_ttl==left_ttl)针对上次limit,而本次echo;
 			mid_ttl=echo_reply_ttl 										-- or (right_ttl==left_ttl)针对本次limit后，left_ttl=mid_ttl+1=right_ttl
-			print(ip,"guest ttl:",mid_ttl)
+			print(ip,mid_ttl,"division to guest ttl success!")
 			break
 		end
-		if times>2 then
+		if times>0 then
 			break
 		end
 	end
 	mid_ttl=math.floor(mid_ttl)
-	if times>2 then
+	if times>0 then
+		if mid_ttl+1==echo_reply_ttl then
+			print(ip,"last hop no reply,no need to traceroute")
+			return -1
+		end
+		local old_mid_ttl=mid_ttl
+		print(ip,time_limit_ttl,echo_reply_ttl,mid_ttl,old_mid_ttl,"begin traceroute to guess")
 		mid_ttl=guest_network_distance_by_traceroute(34,mid_ttl,iface,send_l3_sock,ip,icmp_echo_listener_signal,icmp_tole_listener_signal)
 		if mid_ttl>0 then
-			print(mid_ttl,ip,"traceroute guess success!")
+			print(ip,mid_ttl,"traceroute guess success!")
 		else
-			print(ip," traceroute fail!")
+			print(ip,"traceroute guess fail!")
 		end
 	end
 
 	icmp_echo_listener_signal['status']=1
 	icmp_tole_listener_signal['guest']=0
 	--print("guest end")
-	if mid_ttl>1 then 
+	if mid_ttl>1 and ttl_from_target_to_source>0 then
 		print(ip,mid_ttl,ttl_from_target_to_source,"difference:",mid_ttl-ttl_from_target_to_source)
 	end
 	return mid_ttl
@@ -384,7 +328,7 @@ end
 --action = function(host, port)
 
 action = function(host)
-	print("\n\n**************************************************")
+	print("\n\n**************************************************",host.ip)
 	local ifname = nmap.get_interface() or host.interface
 	if ( not(ifname) ) then
 		return fail("Failed to determine the network interface name")
@@ -397,17 +341,6 @@ action = function(host)
 	local send_l3_sock = nmap.new_dnet()
 	send_l3_sock:ip_open()
 
-	--建立监听线程,用于接受icmp端口不可达包
-	--
-	-- @param icmp_pu_listener function name
-	-- @param send_l3_sock l3 layer raw socket
-	-- @param icmp_pu_listener_signal listener stop signal
-	-- local icmp_pu_listener_signal={}
-	-- local icmp_pu_listener_condvar = nmap.condvar(icmp_pu_listener_signal)
-	-- icmp_pu_listener_signal['status']=0
-	-- local icmp_pu_listener_handler=stdnse.new_thread(icmp_pu_listener,send_l3_sock,icmp_pu_listener_signal,host.ip)
-
-
 	--建立监听线程，用于接收icmp生存时间过期报文
 	--
 	-- @param icmp_pu_listener function name
@@ -417,7 +350,7 @@ action = function(host)
 	icmp_tole_listener_signal['status']=0
 	icmp_tole_listener_signal['guest']=1
 	icmp_tole_listener_signal['last_hop']=0		--是否收到最后一跳
-	local icmp_tole_listener_handler=stdnse.new_thread(icmp_tole_listener,icmp_tole_listener_signal,host.ip)
+	local icmp_tole_listener_handler=stdnse.new_thread(icmp_tole_listener,icmp_tole_listener_signal,host.ip,iface)
 
 	--建立监听线程，用于接收icmp echo respone报文
 	--
@@ -427,32 +360,23 @@ action = function(host)
 	local icmp_echo_listener_condvar = nmap.condvar(icmp_echo_listener_signal)
 	icmp_echo_listener_signal['status']=0
 	icmp_echo_listener_signal['left_ttl']=0
-	local icmp_echo_listener_handler=stdnse.new_thread(icmp_echo_listener,icmp_echo_listener_signal,host.ip)
+	local icmp_echo_listener_handler=stdnse.new_thread(icmp_echo_listener,icmp_echo_listener_signal,host.ip,iface)
 
 	stdnse.sleep(1)
 	local guest_ttl=guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icmp_tole_listener_signal,host.ip)
 
 	if guest_ttl>1 then
-		print(host.ip,guest_ttl,"send packet to get last hop...")
+		print(host.ip,guest_ttl,"guest_ttl_success,send packet to get last hop...")
 		set_ttl_to_ping(iface,send_l3_sock,host.ip,guest_ttl-1)
 		stdnse.sleep(2)
-		if icmp_tole_listener_signal['last_hop']==0 then
-			print(host.ip,"have guessed ttl,but no get last_hop")
-			set_ttl_to_ping(iface,send_l3_sock,host.ip,guest_ttl-1)
-			stdnse.sleep(2)
-		end
 	elseif guest_ttl==1 then
 		print(host.ip,"target in intranet ")
 	else
-		print(host.ip," guest ttl fail...")
+		print(host.ip,"guest_ttl_fail")
 		--return false
 	end
-	if guest_ttl>1 and icmp_tole_listener_signal['last_hop']==0 then
-		print(host.ip,"have guessed ttl,but no get last_hop again")
-	end
-	icmp_tole_listener_signal['status']=1
-	--icmp_pu_listener_signal['status']=1
 
+	icmp_tole_listener_signal['status']=1
 	repeat
 		if coroutine.status(icmp_tole_listener_handler)=="dead" then
 			icmp_tole_listener_handler=nil
@@ -470,20 +394,10 @@ action = function(host)
 		else 
 			--send again udp
 			print("wait for icmp echo listener end...")
+			icmp_echo_listener_signal['status']=1
 			icmp_echo_listener_condvar("wait")
 		end
 	until icmp_echo_listener_handler==nil
-	-- repeat
-	-- 	if coroutine.status(icmp_pu_listener_handler)=="dead" then
-	-- 		icmp_pu_listener_handler=nil
-	-- 	else 
-	-- 		--send again udp
-	-- 		print("wait for icmp port unreachable listener end...")
-	-- 		icmp_pu_listener_condvar("wait")
-	-- 	end
-	-- until icmp_pu_listener_handler==nil
-
-
 
 	send_l3_sock:ip_close()
 
