@@ -4,11 +4,17 @@ file_path=sys.argv[1]
 print file_path
 fr=open(file_path,'r')
 
+
+file_path_oss=file_path+".one_step_success"
+fw_oss=open(file_path_oss,'w')
 first_predict_no_rely=0
 first_send_left_ttl_no_reply=0
 one_step_success=0
 set_ttl_and_send=0
+action=0
 difference={}
+one_step=0
+
 while True:
 	line = fr.readline()
 	if not line:
@@ -21,6 +27,7 @@ while True:
 		first_predict_no_rely=first_predict_no_rely+1
 	elif "one step guess ttl success" in line:
 		one_step_success=one_step_success+1
+		fw_oss.write(line.split()[0]+"\n")
 	elif "difference" in line:
 		d=int(line.split()[4])
 		if d<0:
@@ -31,7 +38,7 @@ while True:
 		else:
 			difference[d]=[]
 			difference[d].append(line.split()[0])
-	elif "set ttl and send:" in line:
+	elif "set ttl and send" in line:
 		set_ttl_and_send=set_ttl_and_send+1
 	else:
 		pass
@@ -42,7 +49,23 @@ print "one_step_success:",
 print one_step_success
 print "first_send_left_ttl_no_reply:",
 print first_send_left_ttl_no_reply
-print "first_predict_no_rely:",
+print "first ping no reply:",
 print first_predict_no_rely
 print "one step send packet number:",
 print set_ttl_and_send
+
+
+print one_step
+one_step_sum=0
+for key in difference:
+	print key,len(difference[key])
+	one_step_sum=one_step_sum+(key+1)*len(difference[key])
+	# for ip in difference[key]:
+	# 	print ip
+print "one_step_sum:",
+print one_step_sum
+one_step_sum=one_step_sum+len(difference[0])
+print one_step_sum
+
+fr.close()
+fw_oss.close()
