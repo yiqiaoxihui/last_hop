@@ -128,8 +128,8 @@ local function fail(err) return ("\n  ERROR: %s"):format(err or "") end
 
 local function set_ttl_to_ping(iface,send_l3_sock,dst_ip,ttl)
 	local ip=packet.Packet:new()
-	ip.ip_bin_dst=packet.iptobin(dst_ip)
-	ip.ip_bin_src = packet.iptobin(iface.address)
+	ip.ip_bin_dst=ipOps.ip_to_str(dst_ip)
+	ip.ip_bin_src = ipOps.ip_to_str(iface.address)
 	ip:build_icmp_echo_request()
 	ip:build_icmp_header()
 	ip:build_ip_packet()
@@ -289,10 +289,11 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 	if icmp_echo_listener_signal['receive']==true then
 		icmp_echo_listener_signal['receive']=nil		--error:forget reset to nil,cause error guess
 		ttl_from_target_to_source=get_distance_from_target_to_source(icmp_echo_listener_signal['left_ttl'])
-		print(ip,set_ttl,"set ttl and send")
+		print(ip,ttl_from_target_to_source,"first predict success,set ttl and send")
 		set_ttl_to_ping(iface,send_l3_sock,ip,ttl_from_target_to_source)
 		stdnse.sleep(2) 	--test,网络延迟，必须等待2秒
 		if icmp_echo_listener_signal['receive']==true then
+			print(ip,ttl_from_target_to_source,"first predict ttl echo reply")
 			icmp_echo_listener_signal['receive']=nil
 			echo_reply_ttl=ttl_from_target_to_source
 			set_ttl=ttl_from_target_to_source
@@ -300,6 +301,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 				set_ttl=set_ttl-1
 				print(ip,set_ttl,"set ttl and send")
 				set_ttl_to_ping(iface,send_l3_sock,ip,set_ttl)
+				stdnse.sleep(2)
 				if icmp_echo_listener_signal['receive']==true then
 					icmp_echo_listener_signal['receive']=nil
 					echo_reply_ttl=set_ttl
@@ -318,6 +320,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 				end
 			end
 		elseif icmp_tole_listener_signal['receive']==true then
+			print(ip,ttl_from_target_to_source,"first predict ttl time limit")
 			icmp_tole_listener_signal['receive']=nil
 			time_limit_ttl=ttl_from_target_to_source
 			set_ttl=ttl_from_target_to_source
@@ -349,7 +352,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 		end
 	else
 		local left_ttl=min_ttl
-		local right_ttl=max_ttl		
+		local right_ttl=max_ttl
 		print(ip,"first predict ttl by ping fail,no receive reply!")
 	end
 	if time_limit_ttl==echo_reply_ttl-1 then
