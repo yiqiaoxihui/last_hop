@@ -125,7 +125,6 @@ local function icmp_tole_listener(signal,ip,iface)
 end
 local function fail(err) return ("\n  ERROR: %s"):format(err or "") end
 
-
 local function set_ttl_to_ping(iface,send_l3_sock,dst_ip,ttl)
 	local ip=packet.Packet:new()
 	ip.ip_bin_dst=ipOps.ip_to_str(dst_ip)
