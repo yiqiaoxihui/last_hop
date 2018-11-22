@@ -25,6 +25,8 @@ fwgs=open(file_path_gs,'w')
 fwdv=open(file_path_dv,'w')
 file_path_first=file_path+".first"
 fw_first=open(file_path_first,'w')
+file_path_trace_success=file_path+".trace_succss"
+fw_trace_success=open(file_path_trace_success,'w')
 action=0
 guest_ttl_fail=0
 small=0
@@ -79,6 +81,7 @@ while True:
 		#fwpu.write(line.split()[0]+"\n")
 	elif "traceroute guess success" in line:
 		traceroute_success=traceroute_success+1
+		fw_trace_success.write(line.split()[0]+"\n")
 	elif  "traceroute guess fail" in line:
 		traceroute_fail=traceroute_fail+1
 	elif "division to guest ttl success" in line:
