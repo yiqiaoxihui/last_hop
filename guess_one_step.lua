@@ -300,7 +300,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 				set_ttl=set_ttl-1
 				print(ip,set_ttl,"set ttl and send")
 				set_ttl_to_ping(iface,send_l3_sock,ip,set_ttl)
-				stdnse.sleep(2)
+				stdnse.sleep(1)
 				if icmp_echo_listener_signal['receive']==true then
 					icmp_echo_listener_signal['receive']=nil
 					echo_reply_ttl=set_ttl
@@ -327,7 +327,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 				set_ttl=set_ttl+1
 				print(ip,set_ttl,"set ttl and send")
 				set_ttl_to_ping(iface,send_l3_sock,ip,set_ttl)
-				stdnse.sleep(2)
+				stdnse.sleep(1)
 				if icmp_echo_listener_signal['receive']==true then
 					icmp_echo_listener_signal['receive']=nil
 					echo_reply_ttl=set_ttl
@@ -347,6 +347,29 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 			end
 		else
 			print(ip,"first send left ttl no reply")
+			set_ttl=ttl_from_target_to_source
+			while true do
+				set_ttl=set_ttl+1
+				print(ip,set_ttl,"set ttl and send")
+				set_ttl_to_ping(iface,send_l3_sock,ip,set_ttl)
+				stdnse.sleep(1)
+				if icmp_echo_listener_signal['receive']==true then
+					icmp_echo_listener_signal['receive']=nil
+					echo_reply_ttl=set_ttl
+					print(ip,set_ttl,"one step receive icmp echo reply,break")
+					break
+				elseif icmp_tole_listener_signal['receive']==true then
+					icmp_tole_listener_signal['receive']=nil
+					time_limit_ttl=set_ttl
+					print(ip,set_ttl,"one step receive icmp time limit")
+				else
+					--nothing todo
+				end
+				if set_ttl>30 and set_ttl ~= time_limit_ttl then
+					print(ip,set_ttl,time_limit_ttl,"one step move more than 30")
+					break
+				end
+			end
 			--mid_ttl=mid_ttl+0.1		--ip:90.196.109.225, left_ttl=9,right_ttl=10, mid_ttl=9,no any reply
 		end
 	else
