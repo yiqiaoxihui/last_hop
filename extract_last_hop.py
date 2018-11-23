@@ -56,6 +56,7 @@ receive_echo_reply=0
 no_echo_reply_back=0
 first_predict_ttl_success=0
 one_step=0
+send_again=0
 while True:
 	line = fr.readline()
 	if not line:
@@ -72,9 +73,9 @@ while True:
 	elif "set min_ttl too big" in line:
 		big=big+1
 		fwtb.write(line.split()[0]+"\n")
-	elif line[0]=="#":
+	elif "#get_last_hop" in line:
 		last_hop_count=last_hop_count+1
-		fwl.write(line.split()[1]+"\n")
+		fwl.write(line.split()[0]+" "+line.split()[2]+"\n")
 		last_hop_set.add(line.split()[1])
 	elif ("icmp pu") in line:
 		icmp_pu=icmp_pu+1
@@ -123,6 +124,8 @@ while True:
 		else:
 			difference[d]=[]
 			difference[d].append(line.split()[0])
+	elif "send again" in line:
+		send_again+=1
 	elif "set ttl and send:" in line:
 		set_ttl_and_send=set_ttl_and_send+1
 	elif "set new ttl by icmp port unreachable" in line:
@@ -145,19 +148,19 @@ while True:
 
 left=guest_ttl_success_set.difference(last_hop_set)
 left1=last_hop_set.difference(guest_ttl_success_set)
-print len(last_hop_set)
-print len(guest_ttl_success_set)
-print len(left)
-print len(left1)
 
+get_and_ping_reply=0
 one_step_sum=0
 for key in difference:
 	print key,len(difference[key])
 	one_step_sum=one_step_sum+(key+1)*len(difference[key])
+	get_and_ping_reply+=len(difference[key])
+
 	# for ip in difference[key]:
 	# 	print ip
+print "get and ping reply:",
+print get_and_ping_reply
 print "one_step_sum:",
-print one_step_sum
 one_step_sum=one_step_sum+len(difference[0])
 print one_step_sum
 if action==0:
@@ -226,10 +229,14 @@ print "set_new_ttl_by_icmp_port_unreachable:",
 print set_new_ttl_by_icmp_port_unreachable
 print "set_ttl_and_send:",
 print set_ttl_and_send
-print "one_step:",
-print one_step
+print "--send_again",
+print send_again
 print "reset_ttl_by_traceroute",
 print reset_ttl_by_traceroute
+
+print "one_step:",
+print one_step
+
 print "my send packet:",
 print set_new_ttl_by_icmp_port_unreachable+set_ttl_and_send+reset_ttl_by_traceroute+action
 print "traceroute:",
