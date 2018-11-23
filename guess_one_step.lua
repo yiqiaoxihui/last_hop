@@ -370,6 +370,10 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 					break
 				end
 			end
+			if time_limit_ttl==echo_reply_ttl-1 then
+				guess_ttl=echo_reply_ttl
+				print(ip,guess_ttl,"get_by_no_reply,one step guess ttl success")
+			end
 			--mid_ttl=mid_ttl+0.1		--ip:90.196.109.225, left_ttl=9,right_ttl=10, mid_ttl=9,no any reply
 		end
 	else
@@ -380,13 +384,22 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 	if time_limit_ttl==echo_reply_ttl-1 then
 		guess_ttl=echo_reply_ttl
 		print(ip,guess_ttl,"one step guess ttl success")
+	elseif echo_reply_ttl > -1 then
+		print(ip,echo_reply_ttl,time_limit_ttl,"try last time")
+		set_ttl_to_ping(iface,send_l3_sock,ip,echo_reply_ttl-1)
+		stdnse.sleep(1)
+		if icmp_tole_listener_signal['receive']==true then
+			icmp_tole_listener_signal['receive']=nil
+			guess_ttl=echo_reply_ttl
+			print(ip,echo_reply_ttl,time_limit_ttl,"last try success")
+		end
 	else
 		print(ip,time_limit_ttl,echo_reply_ttl,"one step guess ttl fail")
 	end
 
 	icmp_echo_listener_signal['status']=1
 	icmp_tole_listener_signal['guest']=0
-	if guess_ttl>1 then
+	if guess_ttl>1 and ttl_from_target_to_source>0 then
 		print(ip,guess_ttl,ttl_from_target_to_source,"difference:",guess_ttl-ttl_from_target_to_source)
 	end
 	return guess_ttl
