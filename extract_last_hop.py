@@ -27,6 +27,16 @@ file_path_first=file_path+".first"
 fw_first=open(file_path_first,'w')
 file_path_trace_success=file_path+".trace_succss"
 fw_trace_success=open(file_path_trace_success,'w')
+file_path_oss=file_path+".one_step_success"
+fw_oss=open(file_path_oss,'w')
+first_send_left_ttl_no_reply=0
+one_step_success=0
+set_ttl_and_send=0
+
+one_step=0
+get_by_no_reply=0
+last_try_success=0
+try_last_time=0
 action=0
 guest_ttl_fail=0
 small=0
@@ -45,7 +55,6 @@ guest_ttl_success_set=set()
 have_guessed_no_get=0
 have_guessed_no_get_again=0
 
-set_new_ttl_by_icmp_port_unreachable=0
 set_ttl_and_send=0 
 reset_ttl_by_traceroute=0
 difference={}
@@ -53,7 +62,7 @@ traceroute_packet=0
 division_to_guest_ttl_success=0
 no_need_to_traceroute=0
 receive_echo_reply=0
-no_echo_reply_back=0
+echo_listener_execeed=0
 first_predict_ttl_success=0
 one_step=0
 send_again=0
@@ -75,7 +84,7 @@ while True:
 		fwtb.write(line.split()[0]+"\n")
 	elif "#get_last_hop" in line:
 		last_hop_count=last_hop_count+1
-		fwl.write(line.split()[0]+" "+line.split()[2]+"\n")
+		fwl.write(line.split()[1]+"\n")
 		last_hop_set.add(line.split()[1])
 	elif ("icmp pu") in line:
 		icmp_pu=icmp_pu+1
@@ -126,11 +135,10 @@ while True:
 			difference[d].append(line.split()[0])
 	elif "send again" in line:
 		send_again+=1
-	elif "set ttl and send:" in line:
+	elif "set ttl and send" in line:
 		set_ttl_and_send=set_ttl_and_send+1
 	elif "set new ttl by icmp port unreachable" in line:
 		traceroute_packet=traceroute_packet+int(line.split()[0])
-		set_new_ttl_by_icmp_port_unreachable=set_new_ttl_by_icmp_port_unreachable+1
 	elif "reset ttl by traceroute" in line:
 		reset_ttl_by_traceroute=reset_ttl_by_traceroute+1
 	elif "traceroute fail get max time limit" in line:
@@ -139,30 +147,23 @@ while True:
 		no_need_to_traceroute=no_need_to_traceroute+1
 	elif "receive echo reply" in line:
 		receive_echo_reply=receive_echo_reply+1
-	elif "no echo reply back!!!!!!" in line:
-		no_echo_reply_back=no_echo_reply_back+1
+	elif "echo listener:no reply back" in line:
+		echo_listener_execeed=echo_listener_execeed+1
 	elif "first predict ttl by ping success,receive reply" in line:
 		first_predict_ttl_success=first_predict_ttl_success+1
+	elif "first send left ttl no reply" in line:
+		first_send_left_ttl_no_reply=first_send_left_ttl_no_reply+1
+	elif "get_by_no_reply" in line:
+		get_by_no_reply+=1
+	elif "one step guess ttl success" in line:
+		one_step_success=one_step_success+1
+		fw_oss.write(line.split()[0]+"\n")
+	# elif "try last time" in line:
+	# 	try_last_time+=1
+	# elif "last try success" in line:
+	# 	last_try_success+=1
 	else:
 		pass
-
-left=guest_ttl_success_set.difference(last_hop_set)
-left1=last_hop_set.difference(guest_ttl_success_set)
-
-get_and_ping_reply=0
-one_step_sum=0
-for key in difference:
-	print key,len(difference[key])
-	one_step_sum=one_step_sum+(key+1)*len(difference[key])
-	get_and_ping_reply+=len(difference[key])
-
-	# for ip in difference[key]:
-	# 	print ip
-print "get and ping reply:",
-print get_and_ping_reply
-print "one_step_sum:",
-one_step_sum=one_step_sum+len(difference[0])
-print one_step_sum
 if action==0:
 	action=1
 if last_hop_count==0:
@@ -171,6 +172,22 @@ if guest_ttl_success==0:
 	guest_ttl_success=1
 if all_guest==0:
 	all_guest=1
+# print "listener no echo reply back:",
+# print echo_listener_execeed
+get_and_ping_reply=0
+one_step_sum=0
+for key in difference:
+	print key,len(difference[key])
+	one_step_sum=one_step_sum+(key+1)*len(difference[key])
+	get_and_ping_reply+=len(difference[key])
+	# for ip in difference[key]:
+	# 	print ip
+# print "get and ping reply:",
+# print get_and_ping_reply
+# print "one_step_sum:",
+# if difference.has_key(0):
+# 	one_step_sum=one_step_sum+len(difference[0])
+# print one_step_sum
 
 print "action:",
 print action
@@ -181,64 +198,61 @@ print last_hop_count,len(last_hop_set),100*last_hop_count/action
 print "***************************icmp****************************"
 print "receive upd port unreachable:",
 print icmp_pu,100*icmp_pu/action
-
-print "receive port unreachable,but last hop no reply:",
+print "--receive port unreachable,but last hop no reply:",
 print but_no_reply,100*but_no_reply/action
-
-print "receive port unreachable,and get last hop",
-print icmp_pu-but_no_reply,100-100*but_no_reply/action
-print "udp_to_get_last_hop:",
-print udp_to_get_last_hop,100*udp_to_get_last_hop/last_hop_count
-print "\n\n"
+print "--receive port unreachable,and get last hop",
+print icmp_pu-but_no_reply,100*(icmp_pu-but_no_reply)/action
 
 print "***************************guess****************************"
 print "number need to guest:",
 print all_guest,100*all_guest/action
-
-
-print "\nguest ttl success:",
+print "--first ping get,no get:",
+print first_predict_ttl_success,first
+print "guest ttl success:",
 print guest_ttl_success,len(guest_ttl_success_set),100*guest_ttl_success/last_hop_count
+print "guest ttl fail:",
+print guest_ttl_fail
 print "--division to guest ttl success:",
 print division_to_guest_ttl_success
 print "--traceroute guess success:",
 print traceroute_success,100*traceroute_success/last_hop_count
 print "--traceroute guess fail:",
 print traceroute_fail
-
-print "\nguest ttl fail:",
-print guest_ttl_fail
-
-print "first predict ttl by ping fail,no receive reply:",
-print first
-print "first predict ttl by ping success,receive reply:",
-print first_predict_ttl_success
-print "receive_echo_reply:",
-print receive_echo_reply
-print "listener no echo reply back:",
-print no_echo_reply_back
+print "--no need to traceroute:",
+print no_need_to_traceroute
+print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+print "--one_step_success:",
+print one_step_success
+# print "--last try success,try last time",
+# print last_try_success,try_last_time
+print "----get_by_no_reply,all second send no reply:",
+print get_by_no_reply,first_send_left_ttl_no_reply
 
 
 print "first predict ttl by ping too small:",
 print small
 print "first predict ttl by ping too big:",
 print big
-print "no need to traceroute:",
-print no_need_to_traceroute
+
 print "*************************send packet**************************"
-print "set_new_ttl_by_icmp_port_unreachable:",
-print set_new_ttl_by_icmp_port_unreachable
-print "set_ttl_and_send:",
-print set_ttl_and_send
-print "--send_again",
-print send_again
-print "reset_ttl_by_traceroute",
+print "method 1 all udp send packet:",
+print action+icmp_pu,action,icmp_pu
+
+print "method2 all guest send packet:",
+print  set_ttl_and_send+reset_ttl_by_traceroute+all_guest
+print "--first ping",
+print all_guest
+print "--reset_ttl_by_traceroute",
 print reset_ttl_by_traceroute
+print "--set_ttl_and_send:",
+print set_ttl_and_send
+print "----send_again",
+print send_again
 
-print "one_step:",
-print one_step
-
+# print "one_step:",
+# print one_step
 print "my send packet:",
-print set_new_ttl_by_icmp_port_unreachable+set_ttl_and_send+reset_ttl_by_traceroute+action
+print icmp_pu+set_ttl_and_send+reset_ttl_by_traceroute+action+all_guest
 print "traceroute:",
 print traceroute_packet
 
@@ -258,3 +272,4 @@ fwudp.close()
 fwgs.close()
 fw_first.close()
 fwdv.close()
+fw_oss.close()
