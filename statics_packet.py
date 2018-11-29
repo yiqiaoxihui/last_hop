@@ -21,6 +21,6 @@ while True:
 			difference[d]['packet']=int(line.split()[5])
 
 for key in difference:
-	print key,difference[key]['packet']/difference[key]['count']
+	print key,10*difference[key]['packet']/difference[key]['count']
 
 fr.close()
