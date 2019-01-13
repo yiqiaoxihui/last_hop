@@ -209,8 +209,8 @@ end
 
 local function guest_network_distance_by_traceroute(end_ttl,error_ttl,iface,send_l3_sock,ip,icmp_echo_listener_signal,icmp_tole_listener_signal)
 	local times=0
-	local time_limit_ttl=-1
-	local echo_reply_ttl=-1
+	local time_limit_ttl=0
+	local echo_reply_ttl=0
 	stdnse.sleep(1)
 	for i=error_ttl+1, end_ttl do
 		print(ip,"reset ttl by traceroute",i)
@@ -257,8 +257,8 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 	local guess_ttl=0
 	local status=true
 	local times=0
-	local time_limit_ttl=-1		--max time limit ttl
-	local echo_reply_ttl=-1		--min echo reply ttl
+	local time_limit_ttl=0		--max time limit ttl
+	local echo_reply_ttl=0		--min echo reply ttl
 	set_ttl_to_ping(iface,send_l3_sock,ip,64)
 	stdnse.sleep(1)
 	if icmp_echo_listener_signal['receive']==true then
@@ -462,21 +462,11 @@ action = function(host)
 			print(host.ip,guest_ttl,"guest_ttl_success,send packet to get last hop...")
 			set_ttl_to_ping(iface,send_l3_sock,host.ip,guest_ttl-1)
 			stdnse.sleep(1)			--needtotest
-			if icmp_tole_listener_signal['last_hop']==0 then
-				print(host.ip,"have guessed ttl,but no get last_hop")
-				set_ttl_to_ping(iface,send_l3_sock,host.ip,guest_ttl-1)
-				--stdnse.sleep(1)
-			else
-				print("get last hop by guess success")
-			end
 		elseif guest_ttl==1 then
 			print(host.ip,"target in intranet")
 		else
 			print(host.ip,"guest_ttl_fail")
 			--return false
-		end
-		if guest_ttl>1 and icmp_tole_listener_signal['last_hop']==0 then
-			print(host.ip,"have guessed ttl,but no get last_hop again")
 		end
 		icmp_tole_listener_signal['status']=1
 		repeat

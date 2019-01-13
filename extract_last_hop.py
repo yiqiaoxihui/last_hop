@@ -7,7 +7,7 @@ fr=open(file_path,'r')
 
 file_path_l=file_path+".lasthop"
 file_path_a=file_path+".action"
-file_path_f=file_path+".traceroute_fail"
+file_path_f=file_path+".guest_ttl_fail"
 file_path_ts=file_path+".small"
 file_path_tb=file_path+".big"
 file_path_pu=file_path+".pu"
@@ -103,15 +103,6 @@ while True:
 	elif "udp_to_get_last_hop" in line:
 		fwudp.write(line.split()[0]+"\n")
 		udp_to_get_last_hop=udp_to_get_last_hop+1
-	elif "guest_ttl_success" in line:
-		traceroute_packet=traceroute_packet+int(line.split()[1])
-		ip=line.split()[0]
-		fwgs.write(ip+"\n")
-		if ip in guest_ttl_success_set:
-			print "repeat guest_ttl_success:"+ip
-		else:
-			guest_ttl_success_set.add(ip)
-		guest_ttl_success=guest_ttl_success+1
 	elif "begin to guest ttl" in line:
 		all_guest=all_guest+1
 	elif "but last hop no reply" in line:		#receive icmp port unreachable packet,but last hop no reply
@@ -137,12 +128,8 @@ while True:
 		send_again+=1
 	elif "set ttl and send" in line:
 		set_ttl_and_send=set_ttl_and_send+1
-	elif "set new ttl by icmp port unreachable" in line:
-		traceroute_packet=traceroute_packet+int(line.split()[0])
 	elif "reset ttl by traceroute" in line:
 		reset_ttl_by_traceroute=reset_ttl_by_traceroute+1
-	elif "traceroute fail get max time limit" in line:
-		traceroute_packet=traceroute_packet+int(line.split()[1])
 	elif "last hop no reply,no need to traceroute" in line:
 		no_need_to_traceroute=no_need_to_traceroute+1
 	elif "receive echo reply" in line:
@@ -158,6 +145,21 @@ while True:
 	elif "one step guess ttl success" in line:
 		one_step_success=one_step_success+1
 		fw_oss.write(line.split()[0]+"\n")
+	elif "traceroute fail get max time limit" in line:
+		traceroute_packet=traceroute_packet+int(line.split()[1])
+	elif "one step guess ttl fail" in line:
+		traceroute_packet+=int(line.split()[2])
+	elif "set new ttl by icmp port unreachable" in line:
+		traceroute_packet=traceroute_packet+int(line.split()[0])
+	elif "guest_ttl_success" in line:
+		traceroute_packet=traceroute_packet+int(line.split()[1])
+		ip=line.split()[0]
+		fwgs.write(ip+"\n")
+		# if ip in guest_ttl_success_set:
+		# 	print "repeat guest_ttl_success:"+ip
+		# else:
+		# 	guest_ttl_success_set.add(ip)
+		guest_ttl_success=guest_ttl_success+1
 	# elif "try last time" in line:
 	# 	try_last_time+=1
 	# elif "last try success" in line:

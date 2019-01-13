@@ -206,19 +206,19 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 		print(ip,"first predict ttl by ping success,receive reply!")
 		icmp_echo_listener_signal['receive']=nil		--error:forget reset to nil,cause error guess
 		ttl_from_target_to_source=get_distance_from_target_to_source(icmp_echo_listener_signal['left_ttl'])
-		--print("guest ttl",ttl_from_target_to_source)
-		-- deviation_right=ttl_from_target_to_source-30+deviation_distance
-		-- deviation_left=deviation_distance-ttl_from_target_to_source		--5-3
-		-- if deviation_right<0 then
-		-- 	deviation_right=0
-		-- end
-		-- if deviation_left<0 then
-		-- 	deviation_left=0
-		-- end
-		-- min_ttl=ttl_from_target_to_source-deviation_right-deviation_distance+deviation_left
-		-- max_ttl=ttl_from_target_to_source-deviation_right+deviation_distance+deviation_left
-		min_ttl=ttl_from_target_to_source- deviation_distance
-		max_ttl=ttl_from_target_to_source+ deviation_distance
+		print("guest ttl",ttl_from_target_to_source)
+		deviation_right=ttl_from_target_to_source-30+deviation_distance
+		deviation_left=deviation_distance-ttl_from_target_to_source		--5-3
+		if deviation_right<0 then
+			deviation_right=0
+		end
+		if deviation_left<0 then
+			deviation_left=0
+		end
+		min_ttl=ttl_from_target_to_source-deviation_right-deviation_distance+deviation_left
+		max_ttl=ttl_from_target_to_source-deviation_right+deviation_distance+deviation_left
+		-- min_ttl=ttl_from_target_to_source- deviation_distance
+		-- max_ttl=ttl_from_target_to_source+ deviation_distance
 		if min_ttl<1 then
 			min_ttl=1
 		end

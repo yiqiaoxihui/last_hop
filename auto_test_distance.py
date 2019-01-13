@@ -7,9 +7,9 @@ file_path=sys.argv[2]
 script_path=sys.argv[1]
 print script_path, file_path
 
-for i in range(1,10):
-	for j in range(1,10):
-		print "\n\ndistance:"+str(i)
+for i in range(1,8):
+	for j in range(1,8):
+		print "\n\ndistance:"+str(i)+","+str(j)
 		time.sleep(3)
 		fw=open("guess.distance."+str(i)+"."+str(j),"w")
 		cmd="nmap -sn -n -e eno2 --script "+script_path+" -iL "+file_path+" --script-args='distance="+str(i)+",second_distance="+str(j)+"'"
@@ -44,5 +44,3 @@ for i in range(1,10):
 			print('Subprogram failed')
 			print i
 			break
-
-

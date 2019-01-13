@@ -14,6 +14,9 @@ set_ttl_and_send=0
 action=0
 difference={}
 one_step=0
+get_by_no_reply=0
+last_try_success=0
+try_last_time=0
 
 while True:
 	line = fr.readline()
@@ -25,14 +28,20 @@ while True:
 		first_send_left_ttl_no_reply=first_send_left_ttl_no_reply+1
 	elif "first predict ttl by ping fail,no receive reply" in line:
 		first_predict_no_rely=first_predict_no_rely+1
+	elif "get_by_no_reply,one step guess ttl success" in line:
+		get_by_no_reply+=1
 	elif "one step guess ttl success" in line:
 		one_step_success=one_step_success+1
 		fw_oss.write(line.split()[0]+"\n")
+	elif "try last time" in line:
+		try_last_time+=1
+	elif "last try success" in line:
+		last_try_success+=1
 	elif "difference" in line:
 		d=int(line.split()[4])
-		if d<0:
-			d=d*(-1)
-		one_step=one_step+d+1
+		# if d<0:
+		# 	d=d*(-1)
+		# one_step=one_step+d+1
 		if difference.has_key(d):
 			difference[d].append(line.split()[0])
 		else:
@@ -47,8 +56,14 @@ print "action:",
 print action
 print "one_step_success:",
 print one_step_success
+print "try last time",
+print	try_last_time
+print "last try success",
+print	last_try_success
 print "first_send_left_ttl_no_reply:",
 print first_send_left_ttl_no_reply
+print "get_by_no_reply:",
+print get_by_no_reply
 print "first ping no reply:",
 print first_predict_no_rely
 print "one step send packet number:",
