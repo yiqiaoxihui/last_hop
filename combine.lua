@@ -94,7 +94,7 @@ local function icmp_pu_listener(send_l3_sock,signal,ip,iface)
 			raw_sender_packet_in_l3_icmp_pu_packet:ip_set_ttl(left_ttl)
 			---print("packet.buf len:",#raw_sender_packet_in_l3_icmp_pu_packet.buf)
 			-- set_ttl_to_ping(iface,send_l3_sock,ip,left_ttl)
-			--由于对udp包和icmp包处理方式有差别，因此，仍然发送udp包
+			--由于对udp包和icmp包处理方式有差别，因此，仍然发送udp包，可能所走路径不一样了
 			send_l3_sock:ip_send(raw_sender_packet_in_l3_icmp_pu_packet.buf)
 		else
 			print("no icmp port unreachable packet back!")
@@ -485,8 +485,3 @@ action = function(host)
 
 	return true
 end
-
-
-
-
-
