@@ -137,14 +137,8 @@ local function icmp_pu_listener(send_l3_sock,signal,ip,iface)
 			else
 				left_ttl=64-raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl
 			end
-			--print("get left_ttl value:",raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl)
-			--print("set new ttl:",left_ttl)
-			--print("send new packet for sniffer last hop...")
-
-			--raw_sender_packet_in_l3_icmp_pu_packet:ip_set_ttl(left_ttl)
-			---print("packet.buf len:",#raw_sender_packet_in_l3_icmp_pu_packet.buf)
-			set_ttl_to_ping(iface,send_l3_sock,ip,left_ttl)
-			--send_l3_sock:ip_send(raw_sender_packet_in_l3_icmp_pu_packet.buf)
+			print(left_ttl+1,"set new ttl by icmp port unreachable")
+			send_l3_sock:ip_send(raw_sender_packet_in_l3_icmp_pu_packet.buf)
 		else
 			--print("no icmp port unreachable packet back!")
 		---local p2=packet.Packet:build_ip_packet(p1.ip_src,p1.ip_dst,"123",0,0xbeef,0,left_ttl,"1")
@@ -225,3 +219,4 @@ send_udp_socket:close()
 --print("**************************************************")
 return true
 end
+

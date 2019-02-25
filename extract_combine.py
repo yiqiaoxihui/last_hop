@@ -68,6 +68,8 @@ first_predict_ttl_success=0
 one_step=0
 send_again=0
 method_2_send=0
+method_2_traceroute_send=0
+method_1_traceroute_send=0
 while True:
 	line = fr.readline()
 	if not line:
@@ -90,7 +92,7 @@ while True:
 		last_hop_set.add(line.split()[1])
 	elif ("icmp pu") in line:
 		icmp_pu=icmp_pu+1
-		#fwpu.write(line.split()[0]+"\n")
+		fwpu.write(line.split()[2]+"\n")
 	elif "traceroute guess success" in line:
 		traceroute_success=traceroute_success+1
 		fw_trace_success.write(line.split()[0]+"\n")
@@ -127,12 +129,8 @@ while True:
 		else:
 			difference[d]=[]
 			difference[d].append(line.split()[0])
-	elif "send again" in line:
-		send_again+=1
 	elif "set ttl and send" in line:
 		set_ttl_and_send=set_ttl_and_send+1
-	elif "reset ttl by traceroute" in line:
-		reset_ttl_by_traceroute=reset_ttl_by_traceroute+1
 	elif "last hop no reply,no need to traceroute" in line:
 		no_need_to_traceroute=no_need_to_traceroute+1
 	elif "receive echo reply" in line:
@@ -154,19 +152,14 @@ while True:
 		traceroute_packet+=int(line.split()[2])
 	elif "set new ttl by icmp port unreachable" in line:
 		traceroute_packet=traceroute_packet+int(line.split()[0])
+		method_1_traceroute_send+=int(line.split()[0])
 	elif "guest_ttl_success" in line:
 		traceroute_packet=traceroute_packet+int(line.split()[1])
+		method_2_traceroute_send+=int(line.split()[1])
 		ip=line.split()[0]
 		fwgs.write(ip+"\n")
-		# if ip in guest_ttl_success_set:
-		# 	print "repeat guest_ttl_success:"+ip
-		# else:
-		# 	guest_ttl_success_set.add(ip)
 		guest_ttl_success=guest_ttl_success+1
-	# elif "try last time" in line:
-	# 	try_last_time+=1
-	# elif "last try success" in line:
-	# 	last_try_success+=1
+
 	else:
 		pass
 if action==0:
@@ -246,10 +239,15 @@ print big
 print "*************************send packet**************************"
 print "method 1 all udp send packet:",
 print action+icmp_pu,action,icmp_pu
+print "method 1 traceroute send packet:",
+print method_1_traceroute_send
 
 print "method2 all guest send packet:",
 print  set_ttl_and_send+reset_ttl_by_traceroute+all_guest
 print method_2_send
+print "method2 traceroute send packet:",
+print  method_2_traceroute_send
+
 print "--first ping",
 print all_guest
 print "--reset_ttl_by_traceroute",
@@ -284,4 +282,5 @@ fwgs.close()
 fw_first.close()
 fwdv.close()
 fw_oss.close()
+
 
