@@ -87,7 +87,7 @@ local function icmp_tole_listener(signal,ip,iface)
 					--print(k,v)
 				end
 				if k=="ip_src" then
-					print("#",ip,dst_ip,v)
+					print("#get_last_hop",ip,dst_ip,v)
 				end
 			end
 		else
