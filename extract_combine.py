@@ -117,7 +117,7 @@ while True:
 	elif "but no get last_hop again" in line:
 		have_guessed_no_get_again=have_guessed_no_get_again+1
 	elif "difference" in line:
-		method_2_send=int(line.split()[5])
+		method_2_send+=int(line.split()[5])
 		d=int(line.split()[4])
 		# if d<0:
 		# 	d=d*(-1)
