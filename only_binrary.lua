@@ -54,7 +54,7 @@ local function icmp_echo_listener(signal,ip,iface)
 	local icmp_echo_rec_socket=nmap.new_socket()
 	local capture_rule="(icmp[0]=0) and (icmp[1]=0) and host "..ip
 	icmp_echo_rec_socket:pcap_open(iface.device,128,false,capture_rule)
-	icmp_echo_rec_socket:set_timeout(5000)
+	icmp_echo_rec_socket:set_timeout(4000)
 	local status,len,l2_icmp_e_r,l3_icmp_echo_reply,time
 	local condvar=nmap.condvar(signal)
 	local get_last_hop_count=0
@@ -87,7 +87,7 @@ local function icmp_tole_listener(signal,ip,iface)
 	--print("str hex ip:",str_hex_ip)
 	local capture_rule="(icmp[0]=11) and (icmp[1]=0) and icmp[24:4]="..str_hex_ip
 	icmp_tole_rec_socket:pcap_open(iface.device,128,false,capture_rule)
-	icmp_tole_rec_socket:set_timeout(5000)
+	icmp_tole_rec_socket:set_timeout(4000)
 	local status,len,l2_icmp_t_l,l3_icmp_tol,time
 	local condvar=nmap.condvar(signal)
 	--local get_last_hop_count=0
@@ -204,7 +204,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 	local deviation_right,deviation_left
 	local deviation_distance = distance	--or 5
 	local send_number=0
-	local guest_ttl=0
+	local guess_ttl=0
 	local left_ttl=1
 	local right_ttl=30
 	local deviation_fail=0
@@ -249,29 +249,22 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 		end
 	end
 	mid_ttl=math.floor(mid_ttl)
-	if times>1 then
+	if times>2 then
 		if mid_ttl+1==echo_reply_ttl then
 			print(ip,"last hop no reply,no need to traceroute")
+		else
+			print(ip,"middle router no reply,binrary can not deal")
 		end
-		-- local old_mid_ttl=mid_ttl
-		-- print(ip,time_limit_ttl,echo_reply_ttl,mid_ttl,old_mid_ttl,"begin traceroute to guess")
-		-- mid_ttl=guest_network_distance_by_traceroute(30,mid_ttl,iface,send_l3_sock,ip,icmp_echo_listener_signal,icmp_tole_listener_signal)
-		-- if mid_ttl>0 then
-		-- 	send_number=send_number+(mid_ttl - old_mid_ttl)
-		-- 	print(ip,mid_ttl,"traceroute guess success!")
-		-- else
-		-- 	print(ip,"traceroute guess fail!")
-		-- end
 	end
 
 	icmp_echo_listener_signal['status']=1		--猜ttl结束，停止监听
 	icmp_tole_listener_signal['guest']=0		--猜ttl结束，获取末跳
 	--print("guest end")
 	if echo_reply_ttl==(time_limit_ttl+1) then
-		guest_ttl=echo_reply_ttl
+		guess_ttl=echo_reply_ttl
 		print(ip,guess_ttl,ttl_from_target_to_source,"difference:",guess_ttl-ttl_from_target_to_source,send_number,left_ttl)
 	end
-	return mid_ttl
+	return guess_ttl
 	-- body
 end
 
