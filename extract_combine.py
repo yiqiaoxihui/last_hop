@@ -67,6 +67,7 @@ echo_listener_execeed=0
 first_predict_ttl_success=0
 one_step=0
 send_again=0
+middle_not_reply=0
 method_2_send=0
 method_2_traceroute_send=0
 method_1_traceroute_send=0
@@ -159,7 +160,8 @@ while True:
 		ip=line.split()[0]
 		fwgs.write(ip+"\n")
 		guest_ttl_success=guest_ttl_success+1
-
+	elif "middle router no reply,binrary can not deal" in line:
+		middle_not_reply+=1
 	else:
 		pass
 if action==0:
@@ -214,14 +216,12 @@ print "guest ttl success:",
 print guest_ttl_success,len(guest_ttl_success_set),100*guest_ttl_success/last_hop_count
 print "guest ttl fail:",
 print guest_ttl_fail
+print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 print "--division to guest ttl success:",
 print division_to_guest_ttl_success
-print "--traceroute guess success:",
-print traceroute_success,100*traceroute_success/last_hop_count
-print "--traceroute guess fail:",
-print traceroute_fail
 print "--no need to traceroute:",
 print no_need_to_traceroute
+print "middle_not_reply:",middle_not_reply
 print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 print "--one_step_success:",
 print one_step_success
