@@ -147,8 +147,6 @@ while True:
 	elif "one step guess ttl success" in line:
 		one_step_success=one_step_success+1
 		fw_oss.write(line.split()[0]+"\n")
-	elif "traceroute fail get max time limit" in line:
-		traceroute_packet=traceroute_packet+int(line.split()[1])
 	elif "one step guess ttl fail" in line:
 		traceroute_packet+=int(line.split()[2])
 	elif "set new ttl by icmp port unreachable" in line:

@@ -317,7 +317,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 	else
 		print(ip,"first predict ttl by ping fail,no receive reply!")
 	end
-	if time_limit_ttl==echo_reply_ttl-1 then
+	if time_limit_ttl==(echo_reply_ttl-1) then
 		guess_ttl=echo_reply_ttl
 		print(ip,guess_ttl,"one step guess ttl success")
 	else
