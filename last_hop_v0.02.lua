@@ -67,7 +67,7 @@ local function icmp_tole_listener(signal,ip,iface)
 	--print("str hex ip:",str_hex_ip)
 	local capture_rule="(icmp[0]=11) and (icmp[1]=0) and icmp[24:4]="..str_hex_ip
 	icmp_tole_rec_socket:pcap_open(iface.device,128,false,capture_rule)
-	icmp_tole_rec_socket:set_timeout(5000)
+	icmp_tole_rec_socket:set_timeout(4000)
 	local status,len,l2_icmp_t_l,l3_icmp_tol,time
 	local condvar=nmap.condvar(signal)
 	while signal['status']==0 do
@@ -107,7 +107,7 @@ local function icmp_pu_listener(send_l3_sock,signal,ip,iface)
 	local icmp_pu_rec_socket=nmap.new_socket()
 	local capture_rule="(icmp[0]=3) and (icmp[1]=3) and host "..ip
 	icmp_pu_rec_socket:pcap_open(iface.device,70,false,capture_rule)
-	icmp_pu_rec_socket:set_timeout(5000)
+	icmp_pu_rec_socket:set_timeout(4000)
 	local condvar = nmap.condvar(signal)
 	local status,len,l2_icmp_pu_data,l3_icmp_pu_data,time
 	--pcap_receive()方法似乎不会因收包后的解析产生的延迟而错过网络中到达的数据包
@@ -126,25 +126,25 @@ local function icmp_pu_listener(send_l3_sock,signal,ip,iface)
 			local raw_sender_packet_in_l3_icmp_pu_packet=packet.Packet:new(raw_sender_data_in_l3_icmp_pu_packet,#raw_sender_data_in_l3_icmp_pu_packet)
 
 			local left_ttl=0
-			if raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl>64
+			if raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl>32
 			then
-				if raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl>128
+				if raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl>64
 				then
-					left_ttl=256-raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl
+					if raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl>128
+					then
+						left_ttl=255-raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl
+					else
+						left_ttl=128-raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl
+					end
 				else
-					left_ttl=128-raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl
+					left_ttl=64-raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl
 				end
 			else
-				left_ttl=64-raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl
+				left_ttl=32 - raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl
 			end
-			--print("get left_ttl value:",raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl)
-			--print("set new ttl:",left_ttl)
-			--print("send new packet for sniffer last hop...")
-
-			--raw_sender_packet_in_l3_icmp_pu_packet:ip_set_ttl(left_ttl)
-			---print("packet.buf len:",#raw_sender_packet_in_l3_icmp_pu_packet.buf)
-			set_ttl_to_ping(iface,send_l3_sock,ip,left_ttl)
-			--send_l3_sock:ip_send(raw_sender_packet_in_l3_icmp_pu_packet.buf)
+			print(left_ttl+1,"set new ttl by icmp port unreachable")
+			raw_sender_packet_in_l3_icmp_pu_packet:ip_set_ttl(left_ttl)
+			send_l3_sock:ip_send(raw_sender_packet_in_l3_icmp_pu_packet.buf)
 		else
 			--print("no icmp port unreachable packet back!")
 		---local p2=packet.Packet:build_ip_packet(p1.ip_src,p1.ip_dst,"123",0,0xbeef,0,left_ttl,"1")
@@ -225,3 +225,4 @@ send_udp_socket:close()
 --print("**************************************************")
 return true
 end
+
