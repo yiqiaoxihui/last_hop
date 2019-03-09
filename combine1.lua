@@ -484,8 +484,3 @@ action = function(host)
 
 	return true
 end
-
-
-
-
-

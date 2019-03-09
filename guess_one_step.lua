@@ -141,10 +141,14 @@ end
 local function get_distance_from_target_to_source(left_ttl)
 	--print("left_ttl:",left_ttl)
 	local ttl=0
-	if left_ttl>32 then
+	if left_ttl>30 then
 		if left_ttl>64 then
 			if left_ttl>128 then
-				ttl=255-left_ttl
+				if left_ttl>200 then
+					ttl=255-left_ttl
+				else
+					left_ttl=200-left_ttl
+				end
 			else
 				ttl=128-left_ttl
 			end
@@ -208,7 +212,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 	local times=0
 	local time_limit_ttl=-1		--max time limit ttl
 	local echo_reply_ttl=-1		--min echo reply ttl
-	local send_number=1
+	local send_number=0
 	local left_ttl=-1
 	set_ttl_to_ping(iface,send_l3_sock,ip,64)
 	stdnse.sleep(2)
@@ -308,7 +312,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 					break
 				end
 			end
-			if time_limit_ttl==echo_reply_ttl-1 then
+			if time_limit_ttl==(echo_reply_ttl-1) then
 				guess_ttl=echo_reply_ttl
 				print(ip,guess_ttl,"get_by_no_reply,one step guess ttl success")
 			end
@@ -327,6 +331,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 	icmp_echo_listener_signal['status']=1
 	icmp_tole_listener_signal['guest']=0
 	if guess_ttl>1 and ttl_from_target_to_source>0 then
+		send_number=send_number+1	--first ping
 		print(ip,guess_ttl,ttl_from_target_to_source,"difference:",guess_ttl-ttl_from_target_to_source,send_number,left_ttl)
 	end
 	return guess_ttl
