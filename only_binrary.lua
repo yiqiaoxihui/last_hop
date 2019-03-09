@@ -241,6 +241,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 			end
 		else
 			print(ip,mid_ttl,"send again")
+			left_ttl=left_ttl+1  --默认未到达目标，中间路由器未回应，进一步扩大ttl
 			times=times+1
 			if times>2 then
 				break
