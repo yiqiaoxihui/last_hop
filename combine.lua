@@ -203,7 +203,7 @@ local function get_distance_from_target_to_source(left_ttl)
 				if left_ttl>200 then
 					ttl=255-left_ttl
 				else
-					left_ttl=200-left_ttl
+					ttl=200-left_ttl
 				end
 			else
 				ttl=128-left_ttl
