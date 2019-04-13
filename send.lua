@@ -96,50 +96,60 @@ local function send_packet(iface,send_l3_sock,dst_ip,ttl,type)
 	      "4500 0014 0000 4000 8000 0000 0000 0000 0000 0000" ..
 	      "0000 0000 0800 0000"
 	    )
-
 	    ip = packet.Packet:new(pktbin, pktbin:len())
-
 	    ip:udp_parse(false)
-	    ip:ip_set_bin_src(iface.address)
-	    ip:ip_set_bin_dst(dst_ip)
+
+	    ip:ip_set_bin_src(ipOps.ip_to_str(pi['src']))
+	    ip:ip_set_bin_dst(ipOps.ip_to_str(pi['dst']))
 	    ip:set_u8(ip.ip_offset + 9, packet.IPPROTO_UDP)
 	    ip.ip_p = packet.IPPROTO_UDP
 	    ip:ip_set_len(pktbin:len())
-	    ip:udp_set_sport(math.random(0x401, 0xffff))
-	    ip:udp_set_dport(65534)
+	    ip:udp_set_sport(pi['sport'])	--math
+	    ip:udp_set_dport(pi['dport'])	--by send packet type array
 	    ip:udp_set_length(ip.ip_len - ip.ip_hl * 4)
 	    ip:udp_count_checksum()
-	    ip:ip_set_ttl(ttl)
+	    ip:ip_set_ttl(pi['ttl'])
 	    ip:ip_count_checksum()
+	send_l3_sock:ip_send(ip.buf)
 	elseif type==17 then
-		print("send tcp")
+	    print("send tcp")
 	    local pktbin = bin.pack("H",
 	      "4500 0014 0000 4000 8000 0000 0000 0000 0000 0000" ..
-	      "0000 0000 0000 0000 0000 0000 6002 0c00 0000 0000 0204 05b4"
-	    )
+	      "0000 0000 0000 0000 0000 0000 5002 0c00 0000 0000"
+	    )--sportdport   seq     ack_seq  header_len:6,
+									 --00000010:SYN
+									 --00010000:ACK
+									 --00000001:FIN
 	    ip = packet.Packet:new(pktbin, pktbin:len())
 	    ip:tcp_parse(false)
-	    ip:ip_set_bin_src(iface.address)
-	    ip:ip_set_bin_dst(dst_ip)
-	    ip:tcp_set_sport(math.random(0x401, 0xffff))
-	    ip:tcp_set_dport(80)
-	    ip:tcp_set_seq(math.random(1, 0x7fffffff))
+	    ip:ip_set_bin_src(ipOps.ip_to_str(pi['src']))
+	    ip:ip_set_bin_dst(ipOps.ip_to_str(pi['dst']))
+	    -- ip:tcp_set_flags(2)	0000 0000,00 URG ACK PSH RST SYN FIN 
+	    ip:set_u8(ip.ip_offset + 9, packet.IPPROTO_TCP)
+	    ip.ip_p = packet.IPPROTO_TCP
+	    ip:ip_set_len(pktbin:len())
+	    ip:tcp_set_sport(pi['sport'])
+	    ip:tcp_set_dport(pi['dport'])
+	    ip:tcp_set_seq(tcp_seq)
+
 	    ip:tcp_count_checksum()
+	    ip:ip_set_ttl(pi['ttl'])
 	    ip:ip_count_checksum()
+
+	send_l3_sock:ip_send(ip.buf)
 	elseif type==1 then
 		ip=packet.Packet:new()
-		ip.ip_bin_dst=ipOps.ip_to_str(dst_ip)
-		ip.ip_bin_src = ipOps.ip_to_str(iface.address)
+		ip.ip_bin_dst=ipOps.ip_to_str(pi['dst'])
+		ip.ip_bin_src = ipOps.ip_to_str(pi['src'])
+		ip.echo_data = "abc"
+		ip.echo_seq = echo_seq
+		ip.echo_id=echo_id
+		ip.ip_offset=0
 		ip:build_icmp_echo_request()
 		ip:build_icmp_header()
 		ip:build_ip_packet()
-		ip.ip_p=6
-		ip.echo_data = "abc"
-		ip.icmp_payload="asfg"
-		ip.icmp_type=1
-		ip.icmp_code=1
-		ip.ip_offset=0
-		ip:ip_set_ttl(ttl)
+		ip:ip_set_ttl(pi['ttl'])
+		send_l3_sock:ip_send(ip.buf)
 	else
 		local ip_bin_dst=ipOps.ip_to_str(dst_ip)
 		local ip_bin_src = ipOps.ip_to_str(iface.address)
