@@ -194,42 +194,30 @@ print "get last hop count:",
 print last_hop_count,len(last_hop_set),100*last_hop_count/action
 
 print "***************************icmp****************************"
-print "receive upd port unreachable:",
-print icmp_pu,100*icmp_pu/action
-print "--receive port unreachable,but last hop no reply:",
-print but_no_reply,100*but_no_reply/action
-print "--receive port unreachable,and get last hop",
-print icmp_pu-but_no_reply,100*(icmp_pu-but_no_reply)/action
+print "receive upd port unreachable:",icmp_pu,100*icmp_pu/action
+print "--receive port unreachable,but last hop no reply:",but_no_reply,100*but_no_reply/action
+print "--receive port unreachable,and get last hop",icmp_pu-but_no_reply,100*(icmp_pu-but_no_reply)/action
 
 print "***************************guess****************************"
-print "number need to guest:",
-print all_guest,100*all_guest/action
-print "guess_lasthop_success:",
-print guess_lasthop_success,len(guest_ttl_success_set),100*guess_lasthop_success/last_hop_count
-print "guest ttl fail:",
-print guest_ttl_fail
+print "number need to guest:",all_guest,100*all_guest/action
+print "guess_lasthop_success:",guess_lasthop_success,len(guest_ttl_success_set),100*guess_lasthop_success/last_hop_count
+print "guest ttl fail:",guest_ttl_fail
 print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-print "--division to guest ttl success:",
-print division_to_guest_ttl_success
-print "--no need to traceroute:",
-print no_need_to_traceroute
+print "--division to guest ttl success:",division_to_guest_ttl_success
+print "--no need to traceroute:",no_need_to_traceroute
 print "middle_not_reply:",middle_not_reply
 print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
 print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-print "one_step_success:",
-print one_step_success
+print "one_step_success:",one_step_success
 
-print "--first ping get,first_ping_no_reply:",
-print first_predict_ttl_success,first_ping_no_reply
+print "--first ping get,first_ping_no_reply:",first_predict_ttl_success,first_ping_no_reply
 print "----first_send_ping_predict_ttl_no_reply,get_by_first_send_ping_predict_ttl_no_reply:",
 print first_send_ping_predict_ttl_no_reply,get_by_first_send_ping_predict_ttl_no_reply
 print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
-print "first predict ttl by ping too small:",
-print small
-print "first predict ttl by ping too big:",
-print big
+print "first predict ttl by ping too small:",small
+print "first predict ttl by ping too big:",big
 
 print "*************************send packet**************************"
 print "method 1 all udp send packet:",
@@ -240,15 +228,11 @@ else:
 print "method 1 traceroute send packet:",
 print method_1_traceroute_send
 
-print "method2 all guest send packet:",
-print  set_ttl_and_send+all_guest
-print "method2 all guest success send packet:",
-print method_2_send
-print "method2 success guess traceroute send packet:",
-print  method_2_guess_success_traceroute_send
+print "method2 all guest send packet:",set_ttl_and_send+all_guest
+print "method2 all guest success send packet:",method_2_send
+print "method2 success guess traceroute send packet:",method_2_guess_success_traceroute_send
 
-print "--set_ttl_and_send:",
-print set_ttl_and_send
+print "--set_ttl_and_send:",set_ttl_and_send
 
 # print "one_step:",
 # print one_step
@@ -260,8 +244,7 @@ else:
 # print icmp_pu+set_ttl_and_send+action+all_guest
 
 
-print "traceroute:",
-print traceroute_packet
+print "traceroute:",traceroute_packet
 
 
 # print "have_guessed_no_get:",
