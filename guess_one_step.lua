@@ -379,7 +379,7 @@ action = function(host)
 	local guest_ttl=guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icmp_tole_listener_signal,host.ip)
 
 	if guest_ttl>1 then
-		print(host.ip,guest_ttl,"guest_ttl_success,send packet to get last hop...")
+		print(host.ip,guest_ttl,"guess_lasthop_success,send packet to get last hop...")
 		set_ttl_to_ping(iface,send_l3_sock,host.ip,guest_ttl-1)
 		stdnse.sleep(1)
 	else

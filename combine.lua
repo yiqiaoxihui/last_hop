@@ -436,7 +436,7 @@ action = function(host)
 		icmp_echo_listener_signal['status']=1 	--退出echo reply监听
 		icmp_tole_listener_signal['guest']=0	--猜测ttl结束
 		if guest_ttl>1 then
-			print(host.ip,guest_ttl,"guest_ttl_success,send packet to get last hop...")
+			print(host.ip,guest_ttl,"guess_lasthop_success,send packet to get last hop...")
 			set_ttl_to_ping(iface,send_l3_sock,host.ip,guest_ttl-1)
 			stdnse.sleep(1)			--needtotest
 			if icmp_tole_listener_signal['last_hop']==0 then
