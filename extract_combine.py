@@ -1,3 +1,4 @@
+ # -*- coding:utf-8 -*-
 import os
 import sys
 #import decimal
@@ -116,6 +117,7 @@ while True:
 	elif "but no get last_hop again" in line:
 		have_guessed_no_get_again=have_guessed_no_get_again+1
 	elif "difference" in line:
+		# traceroute_packet+=int(line.split()[1])
 		method_2_send+=int(line.split()[5])
 		d=int(line.split()[4])
 		# if d<0:
@@ -240,11 +242,14 @@ print "my send packet:",
 if all_guest==0:
 	print method_2_send
 else:
-	action+icmp_pu+method_2_send
+	print action+icmp_pu+method_2_send
+	print action,icmp_pu,method_2_send
 # print icmp_pu+set_ttl_and_send+action+all_guest
 
 
 print "traceroute:",traceroute_packet
+print "method1 traceroute:",method_1_traceroute_send
+print "method2 traceroute:",method_2_guess_success_traceroute_send
 
 
 # print "have_guessed_no_get:",
