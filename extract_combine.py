@@ -120,12 +120,7 @@ while True:
 		# traceroute_packet+=int(line.split()[1])
 		method_2_send+=int(line.split()[5])
 		d=int(line.split()[4])
-		# if d<0:
-		# 	d=d*(-1)
-		if d==0:
-			one_step=one_step+2
-		else:
-			one_step+=d+1
+
 		if difference.has_key(d):
 			difference[d].append(line.split()[0])
 		else:
@@ -176,10 +171,18 @@ p_sum=0
 for key in difference:
 	p_sum+=len(difference[key])
 print "p_sum",p_sum
+send_pack_dic={}
+for i in range (-100,1):
+	send_pack_dic[i]=-i +3
+for i in range(1,100):
+	send_pack_dic[i]=i+2
+m2_send_packet_test=0
 for key in difference:
-	print key,len(difference[key]),len(difference[key])*100/p_sum
+	m2_send_packet_test+=send_pack_dic[key]*len(difference[key])
+	print key,len(difference[key]),len(difference[key])*100.0/p_sum
 	one_step_sum=one_step_sum+(key+1)*len(difference[key])
 	get_and_ping_reply+=len(difference[key])
+print "m2_send_packet_test",m2_send_packet_test
 	# for ip in difference[key]:
 	# 	print ip
 # print "get and ping reply:",
