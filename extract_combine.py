@@ -6,12 +6,12 @@ file_path=sys.argv[1]
 print file_path
 fr=open(file_path,'r')
 
-
-file_path_l=file_path+".lasthop"
 file_path_a=file_path+".action"
+file_path_l=file_path+".lasthop"
+
 file_path_f=file_path+".guest_ttl_fail"
-file_path_ts=file_path+".small"
-file_path_tb=file_path+".big"
+
+
 file_path_pu=file_path+".pu"
 file_path_udp=file_path+".udp"
 # file_path_gs=file_path+".guess_lasthop_success"
@@ -19,8 +19,7 @@ file_path_dv=file_path+".division"
 fwl=open(file_path_l,'w')
 fwa=open(file_path_a,'w')
 fwf=open(file_path_f,'w')
-fwts=open(file_path_ts,'w')
-fwtb=open(file_path_tb,'w')
+
 fwpu=open(file_path_pu,'w')
 fwudp=open(file_path_udp,'w')
 # fwgs=open(file_path_gs,'w')
@@ -81,12 +80,6 @@ while True:
 	elif "guest_ttl_fail" in line:
 		guest_ttl_fail=guest_ttl_fail+1
 		fwf.write(line.split()[0]+"\n")
-	elif "set max_ttl too small" in line:
-		small=small+1
-		fwts.write(line.split()[0]+"\n")
-	elif "set min_ttl too big" in line:
-		big=big+1
-		fwtb.write(line.split()[0]+"\n")
 	elif "#get_last_hop" in line:
 		last_hop_count=last_hop_count+1
 		fwl.write(line.split()[1]+" "+line.split()[3]+"\n")
@@ -203,16 +196,16 @@ print "action:",
 print action
 
 print "get last hop count:",
-print last_hop_count,len(last_hop_set),100*last_hop_count/action
+print last_hop_count,len(last_hop_set),last_hop_count*1.0/action
 
 print "***************************icmp****************************"
-print "receive upd port unreachable:",icmp_pu,100*icmp_pu/action
-print "--receive port unreachable,but last hop no reply:",but_no_reply,100*but_no_reply/action
-print "--receive port unreachable,and get last hop",icmp_pu-but_no_reply,100*(icmp_pu-but_no_reply)/action
+print "receive upd port unreachable:",icmp_pu,icmp_pu*1.0/action
+print "--receive port unreachable,but last hop no reply:",but_no_reply,but_no_reply*1.0/action
+print "--upd get_last_hop,zhanbi",icmp_pu-but_no_reply,(icmp_pu-but_no_reply)*1.0/action
 
 print "***************************guess****************************"
-print "number need to guest:",all_guest,100*all_guest/action
-print "guess_lasthop_success:",guess_lasthop_success,len(guest_ttl_success_set),100*guess_lasthop_success/last_hop_count
+print "number need to guest:",all_guest,all_guest*1.0/action
+print "guess_lasthop_success:",guess_lasthop_success,len(guest_ttl_success_set),guess_lasthop_success*1.0/last_hop_count
 print "guest ttl fail:",guest_ttl_fail
 print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 print "--division to guest ttl success:",division_to_guest_ttl_success
@@ -222,21 +215,22 @@ print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
 print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 print "one_step_success:",one_step_success
-
+if all_guest!=0:
+	print "one_step_success/all_guest",one_step_success*1.0/all_guest
+else:
+	print "one_step_success/action",one_step_success*1.0/action
 print "--first ping get,first_ping_no_reply:",first_predict_ttl_success,first_ping_no_reply
 print "----first_send_ping_predict_ttl_no_reply,get_by_first_send_ping_predict_ttl_no_reply:",
 print first_send_ping_predict_ttl_no_reply,get_by_first_send_ping_predict_ttl_no_reply
 print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
-print "first predict ttl by ping too small:",small
-print "first predict ttl by ping too big:",big
 
 print "*************************send packet**************************"
 print "method 1 all udp send packet:",
 if all_guest==0:
 	print 0
 else:
-	print action+icmp_pu,action,icmp_pu
+	print action+icmp_pu-but_no_reply,action,icmp_pu-but_no_reply
 print "method 1 traceroute send packet:",
 print method_1_traceroute_send
 
@@ -272,8 +266,7 @@ fr.close()
 fwl.close()
 fwf.close()
 fwa.close()
-fwts.close()
-fwtb.close()
+
 fwpu.close()
 fwudp.close()
 # fwgs.close()

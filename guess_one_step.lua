@@ -383,7 +383,7 @@ action = function(host)
 		set_ttl_to_ping(iface,send_l3_sock,host.ip,guest_ttl-1)
 		stdnse.sleep(1)
 	else
-		print(host.ip," guest ttl fail...")
+		print(host.ip,"guest_ttl_fail")
 		--return false
 	end
 	icmp_tole_listener_signal['status']=1
