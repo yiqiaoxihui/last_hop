@@ -195,9 +195,9 @@ local function set_ttl_to_ping(iface,send_l3_sock,dst_ip,ttl)
 end
 
 local function get_distance_from_target_to_source(left_ttl)
-	--print("left_ttl:",left_ttl) 		
+	--print("left_ttl:",left_ttl)
 	local ttl=0
-	if left_ttl>20 then 		--不能大于30，有好多超过30跳的，甚至40跳的，剩余ttl可能很小
+	if left_ttl>30 then
 		if left_ttl>64 then
 			if left_ttl>128 then
 				if left_ttl>200 then
@@ -244,9 +244,9 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 		icmp_echo_listener_signal['receive']=nil		--error:forget reset to nil,cause error guess
 		left_ttl=icmp_echo_listener_signal['left_ttl']
 		ttl_from_target_to_source=get_distance_from_target_to_source(icmp_echo_listener_signal['left_ttl'])
-		print(ip,ttl_from_target_to_source,"first predict ttl by ping success,receive reply",left_ttl)
+		print(ip,ttl_from_target_to_source,"first predict ttl by ping success,receive reply")
 		print(ip,ttl_from_target_to_source,"set ttl and send")
-		if ttl_from_target_to_source>40 then  	--avoid too big ttl
+		if ttl_from_target_to_source>30 then  	--avoid too big ttl
 			set_ttl=15
 		else
 			set_ttl=ttl_from_target_to_source
@@ -356,7 +356,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 	icmp_tole_listener_signal['guest']=0
 	if guess_ttl>1 and ttl_from_target_to_source>0 then
 		send_number=send_number+1
-		print(ip,guess_ttl,ttl_from_target_to_source,"difference,send_number,left_ttl:",guess_ttl-ttl_from_target_to_source,send_number,left_ttl)
+		print(ip,guess_ttl,ttl_from_target_to_source,"difference:",guess_ttl-ttl_from_target_to_source,send_number,left_ttl)
 	end
 	return guess_ttl
 	-- body

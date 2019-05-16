@@ -14,7 +14,7 @@ file_path_ts=file_path+".small"
 file_path_tb=file_path+".big"
 file_path_pu=file_path+".pu"
 file_path_udp=file_path+".udp"
-file_path_gs=file_path+".guess_lasthop_success"
+# file_path_gs=file_path+".guess_lasthop_success"
 file_path_dv=file_path+".division"
 fwl=open(file_path_l,'w')
 fwa=open(file_path_a,'w')
@@ -23,7 +23,7 @@ fwts=open(file_path_ts,'w')
 fwtb=open(file_path_tb,'w')
 fwpu=open(file_path_pu,'w')
 fwudp=open(file_path_udp,'w')
-fwgs=open(file_path_gs,'w')
+# fwgs=open(file_path_gs,'w')
 fwdv=open(file_path_dv,'w')
 file_path_first=file_path+".first"
 fw_first=open(file_path_first,'w')
@@ -126,6 +126,13 @@ while True:
 		else:
 			difference[d]=[]
 			difference[d].append(line.split()[0])
+		traceroute_packet=traceroute_packet+int(line.split()[1])
+		method_2_guess_success_traceroute_send+=int(line.split()[1])
+		ip=line.split()[0]
+		# fwgs.write(ip+"\n")
+		guess_lasthop_success=guess_lasthop_success+1
+		one_step_success=one_step_success+1
+		fw_oss.write(line.split()[0]+"\n")
 	elif "set ttl and send" in line:
 		set_ttl_and_send=set_ttl_and_send+1
 	elif "last hop no reply,no need to traceroute" in line:
@@ -140,20 +147,20 @@ while True:
 		first_send_ping_predict_ttl_no_reply=first_send_ping_predict_ttl_no_reply+1
 	elif "get_by_no_reply" in line:
 		get_by_first_send_ping_predict_ttl_no_reply+=1
-	elif "one step guess ttl success" in line:
-		one_step_success=one_step_success+1
-		fw_oss.write(line.split()[0]+"\n")
+	# elif "one step guess ttl success" in line:
+	# 	one_step_success=one_step_success+1
+	# 	fw_oss.write(line.split()[0]+"\n")
 	elif "one step guess ttl fail" in line:
 		traceroute_packet+=0	#int(line.split()[2])--未成功获取末跳的，发包不算在内
 	elif "set new ttl by icmp port unreachable" in line:
 		traceroute_packet=traceroute_packet+int(line.split()[0])
 		method_1_traceroute_send+=int(line.split()[0])
-	elif "guess_lasthop_success" in line:
-		traceroute_packet=traceroute_packet+int(line.split()[1])
-		method_2_guess_success_traceroute_send+=int(line.split()[1])
-		ip=line.split()[0]
-		fwgs.write(ip+"\n")
-		guess_lasthop_success=guess_lasthop_success+1
+	# elif "guess_lasthop_success" in line:
+	# 	traceroute_packet=traceroute_packet+int(line.split()[1])
+	# 	method_2_guess_success_traceroute_send+=int(line.split()[1])
+	# 	ip=line.split()[0]
+	# 	fwgs.write(ip+"\n")
+	# 	guess_lasthop_success=guess_lasthop_success+1
 	elif "middle router no reply,binrary can not deal" in line:
 		middle_not_reply+=1
 	else:
@@ -233,15 +240,17 @@ else:
 print "method 1 traceroute send packet:",
 print method_1_traceroute_send
 
-print "method2 all guest send packet:",set_ttl_and_send+all_guest
+print "method2 all guest send packet,bujin,erfen:",set_ttl_and_send+all_guest,set_ttl_and_send
+print "--set_ttl_and_send:",set_ttl_and_send
+print "--all_guest:",all_guest
 print "method2 all guest success send packet:",method_2_send
 print "method2 success guess traceroute send packet:",method_2_guess_success_traceroute_send
+print "method2 average send:",method_2_send*1.0/guess_lasthop_success
 
-print "--set_ttl_and_send:",set_ttl_and_send
 
 # print "one_step:",
 # print one_step
-print "my send packet:",
+print "\nall my send packet:",
 if all_guest==0:
 	print method_2_send
 else:
@@ -267,7 +276,7 @@ fwts.close()
 fwtb.close()
 fwpu.close()
 fwudp.close()
-fwgs.close()
+# fwgs.close()
 fw_first.close()
 fwdv.close()
 fw_oss.close()
