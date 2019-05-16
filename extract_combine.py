@@ -258,6 +258,7 @@ else:
 
 
 print "traceroute:",traceroute_packet
+print "\nall traceroute average send packet:", traceroute_packet*1.0/(udp_to_get_last_hop+one_step_success)
 print "method1 traceroute:",method_1_traceroute_send
 print "method2 traceroute:",method_2_guess_success_traceroute_send
 
