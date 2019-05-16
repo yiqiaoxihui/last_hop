@@ -179,9 +179,9 @@ for key in difference:
 	p_sum+=len(difference[key])
 print "p_sum",p_sum
 send_pack_dic={}
-for i in range (-100,1):
+for i in range (-200,1):
 	send_pack_dic[i]=-i +3
-for i in range(1,100):
+for i in range(1,200):
 	send_pack_dic[i]=i+2
 m2_send_packet_test=0
 for key in difference:
