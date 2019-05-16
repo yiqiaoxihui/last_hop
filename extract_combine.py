@@ -201,7 +201,7 @@ print last_hop_count,len(last_hop_set),last_hop_count*1.0/action
 print "***************************icmp****************************"
 print "receive upd port unreachable:",icmp_pu,icmp_pu*1.0/action
 print "--receive port unreachable,but last hop no reply:",but_no_reply,but_no_reply*1.0/action
-print "--upd get_last_hop,zhanbi",icmp_pu-but_no_reply,(icmp_pu-but_no_reply)*1.0/action
+print "--upd get_last_hop,zhanbi",icmp_pu-but_no_reply,udp_to_get_last_hop,(icmp_pu-but_no_reply)*1.0/action
 
 print "***************************guess****************************"
 print "number need to guest:",all_guest,all_guest*1.0/action
@@ -239,7 +239,7 @@ print "--set_ttl_and_send:",set_ttl_and_send
 print "--all_guest:",all_guest
 print "method2 all guest success send packet:",method_2_send
 print "method2 success guess traceroute send packet:",method_2_guess_success_traceroute_send
-print "method2 average send:",method_2_send*1.0/guess_lasthop_success
+print "method2 average send:",method_2_send*1.0/one_step_success
 
 
 # print "one_step:",
@@ -247,9 +247,13 @@ print "method2 average send:",method_2_send*1.0/guess_lasthop_success
 print "\nall my send packet:",
 if all_guest==0:
 	print method_2_send
+	print "\nall my average send packet:",
+	print method_2_send*1.0/(udp_to_get_last_hop+one_step_success)
 else:
 	print action+icmp_pu+method_2_send
 	print action,icmp_pu,method_2_send
+	print "\nall my average send packet:",
+	print (action+udp_to_get_last_hop+method_2_send)*1.0/(udp_to_get_last_hop+one_step_success)
 # print icmp_pu+set_ttl_and_send+action+all_guest
 
 
