@@ -196,10 +196,14 @@ end
 local function get_distance_from_target_to_source(left_ttl)
 	--print("left_ttl:",left_ttl)
 	local ttl=0
-	if left_ttl>32 then
+	if left_ttl>20 then
 		if left_ttl>64 then
 			if left_ttl>128 then
-				ttl=255-left_ttl
+				if left_ttl>200 then
+					ttl=255-left_ttl
+				else
+					ttl=200-left_ttl
+				end
 			else
 				ttl=128-left_ttl
 			end
