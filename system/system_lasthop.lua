@@ -49,13 +49,6 @@ hostrule=function(host)
 end
 local function fail(err) return ("\n  ERROR: %s"):format(err or "") end
 
-local function last_hop(dst_ip,iface,result)
-	local last_hop_condvar = nmap.condvar(result)
-	print('target:',dst_ip)
-	last_hop_main(dst_ip,iface)
-	print('end:',dst_ip,test)
-	last_hop_condvar "signal"
-end
 local function udp_and_one_step_is_not_better(ctrl_info)
 	if (ctrl_info['udp_send']+ctrl_info['udp_get']+ctrl_info['one_step_send'])/(ctrl_info['udp_get']+ctrl_info['one_step_get'])  > (ctrl_info['one_step_send']/ctrl_info['one_step_get']) then
 		return 1
@@ -70,14 +63,20 @@ local function udp_and_binrary_is_not_better(ctrl_info)
 		return 0
 	end
 end
-local function method_control(dst_ip,iface,result,ctrl_info,send_l3_sock)
+local function method_control(dst_ip,iface,result,ctrl_info,send_l3_sock,VERBOSE)
 	local last_hop_condvar = nmap.condvar(result)
 	--udp和步进平均发包大于步进单独平均发包
 	-- now_method   --0 udp和步进;1 步进；2 二分，3 udp和二分
+	all_send=(ctrl_info['udp_send']+ctrl_info['one_step_send']+ctrl_info['binrary_send'])
+	all_get=(ctrl_info['udp_get']+ctrl_info['one_step_get']+ctrl_info['binrary_get'])
 
+	print("all      send,get,avg",all_send,all_get,all_send/all_get)
+	print("udp      send,get,avg",ctrl_info['udp_send'],ctrl_info['udp_get'],ctrl_info['udp_send']/ctrl_info['udp_get'])
+	print("one_step send,get,avg",ctrl_info['one_step_send'],ctrl_info['one_step_get'],ctrl_info['one_step_send']/ctrl_info['one_step_get'])
+	print("binrary  send,get,avg",ctrl_info['binrary_send'],ctrl_info['binrary_get'],ctrl_info['binrary_send']/ctrl_info['binrary_get'])
 	--进入默认方法upd和步进的决策
 	if ctrl_info['now_method'] ==0 then
-		last_hop_combine_one_step(dst_ip,iface,ctrl_info,send_l3_sock)
+		last_hop_combine_one_step(dst_ip,iface,ctrl_info,send_l3_sock,VERBOSE)
 		--udp和步进 平均发包大于步进
 		if  udp_and_one_step_is_not_better(ctrl_info) ==1 then
 			--步进发包大于5，使用二分
@@ -96,7 +95,7 @@ local function method_control(dst_ip,iface,result,ctrl_info,send_l3_sock)
 	end
 	--进入udp和二分法的决策
 	if ctrl_info['now_method'] == 3 then
-		last_hop_combine_binrary(dst_ip,iface,ctrl_info,send_l3_sock)
+		last_hop_combine_binrary(dst_ip,iface,ctrl_info,send_l3_sock,VERBOSE)
 		--如果udp和二分平均发包量大于二分法
 		if udp_and_binrary_is_not_better(ctrl_info) ==1 then
 			--采用二分法
@@ -105,14 +104,14 @@ local function method_control(dst_ip,iface,result,ctrl_info,send_l3_sock)
 	end
 	--进入步进法的决策
 	if ctrl_info['now_method'] == 1 then
-		last_hop_one_step(dst_ip,iface,ctrl_info,send_l3_sock)--步进
+		last_hop_one_step(dst_ip,iface,ctrl_info,send_l3_sock,VERBOSE)--步进
 		if (ctrl_info['one_step_send']/ctrl_info['one_step_get']) > 5 then
 			ctrl_info['now_method']=2
 		end
 	end
 	--二分法
 	if ctrl_info['now_method'] == 2 then
-		last_hop_binrary(dst_ip,iface,ctrl_info,send_l3_sock)--二分
+		last_hop_binrary(dst_ip,iface,ctrl_info,send_l3_sock,VERBOSE)--二分
 	end
 	last_hop_condvar "signal"
 end
@@ -132,6 +131,8 @@ action=function()
 	send_l3_sock:ip_open()
 	local dst_ip=stdnse.get_script_args("ip")
 	local ip_file=stdnse.get_script_args("ip_file")
+	local VERBOSE=stdnse.get_script_args("verbose")
+	VERBOSE=tonumber(VERBOSE)
 	if (not dst_ip)  and (not ip_file) then
 		return fail("error:no target input")
 	end
@@ -157,7 +158,7 @@ action=function()
 		if not err then
 			-- local test={}
 			-- test[1]="asfd"
-			local last_hop_co = stdnse.new_thread(method_control,ip_list[i],iface,last_hop_result,ctrl_info,send_l3_sock)
+			local last_hop_co = stdnse.new_thread(method_control,ip_list[i],iface,last_hop_result,ctrl_info,send_l3_sock,VERBOSE)
 			last_hop_thread_handler[last_hop_co] = true
 			-- last_hop_main(dst_ip,iface)
 			-- print(test[1])
@@ -187,9 +188,9 @@ action=function()
 				print(ip[1],"error:illege ip")
 			end
 			if #ip_list >= 15 then
-				print('begin thread last_hop',ip_count)
+				-- print('begin thread last_hop',ip_count)
 				for i in pairs(ip_list) do
-					local last_hop_co = stdnse.new_thread(method_control,ip_list[i],iface,last_hop_result,ctrl_info,send_l3_sock)
+					local last_hop_co = stdnse.new_thread(method_control,ip_list[i],iface,last_hop_result,ctrl_info,send_l3_sock,VERBOSE)
 					last_hop_thread_handler[last_hop_co] = true
 				end
 				
@@ -207,9 +208,9 @@ action=function()
 			end--end of if #ip_list>=15
 		end--end of for
 		--处理剩余不足15个ip
-		print('begin thread last_hop',ip_count)
+		-- print('begin thread last_hop',ip_count)
 		for i in pairs(ip_list) do
-			local last_hop_co = stdnse.new_thread(method_control,ip_list[i],iface,last_hop_result,ctrl_info,send_l3_sock)
+			local last_hop_co = stdnse.new_thread(method_control,ip_list[i],iface,last_hop_result,ctrl_info,send_l3_sock,VERBOSE)
 			last_hop_thread_handler[last_hop_co]=true
 		end
 		

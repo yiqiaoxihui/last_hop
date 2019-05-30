@@ -49,7 +49,7 @@ end
 
 --建立监听线程
 --用于接受icmp echo 响应报文
-local function icmp_echo_listener(signal,ip,iface)
+local function icmp_echo_listener(signal,ip,iface,VERBOSE)
 	--print("\nbegin icmp time to live exceeded packet listener...")
 	local icmp_echo_rec_socket=nmap.new_socket()
 	local capture_rule="(icmp[0]=0) and (icmp[1]=0) and host "..ip
@@ -80,7 +80,7 @@ end
 --建立监听线程
 --用于接受icmp生存时间过期报文
 --从中提取末跳路由器信息
-local function icmp_tole_listener(signal,ip,iface)
+local function icmp_tole_listener(signal,ip,iface,VERBOSE)
 	--print("\nbegin icmp time to live exceeded packet listener...")
 	local icmp_tole_rec_socket=nmap.new_socket()
 	local str_hex_ip=ipOps.todword(ip)
@@ -110,12 +110,16 @@ local function icmp_tole_listener(signal,ip,iface)
 						--print(k,v)
 					end
 					if k=="ip_src" then
-						print("#get_last_hop",ip,dst_ip,v)
+						if VERBOSE >=0 then
+							print("#get_last_hop",ip,dst_ip,v)
+						end
 					end
 				end				
 			end
 		else
-			print(ip,"no icmp ttl exceeded packet back!")
+			if VERBOSE >=2 then
+				print(ip,"no icmp ttl exceeded packet back!")
+			end
 		end
 	end
 	
@@ -168,7 +172,7 @@ end
 -- @param icmp_echo_listener_signal:receive echo reply signal
 -- @param icmp_tole_listener_signal:receive time limit signal
 -- @param ip:target ip
-function last_hop_binrary_guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icmp_tole_listener_signal,ip,ctrl_info)
+function last_hop_binrary_guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icmp_tole_listener_signal,ip,ctrl_info,VERBOSE)
 	local ttl_from_target_to_source=0
 	local max_ttl = 30
 	local min_ttl=1
@@ -184,12 +188,13 @@ function last_hop_binrary_guest_network_distance(iface,send_l3_sock,icmp_echo_li
 	local echo_reply_ttl=-1		--min echo reply ttl
 	while left_ttl<=right_ttl do
 		mid_ttl=math.floor((left_ttl+right_ttl)/2)
-		print(ip,"set ttl and send:",mid_ttl)
 		send_number=send_number+1
 		set_ttl_to_ping(iface,send_l3_sock,ip,mid_ttl)
 		stdnse.sleep(1) 	--test,网络延迟，必须等待2秒
 		if icmp_echo_listener_signal['receive']==true then
-			print(ip,mid_ttl,"reply icmp echo")
+			if VERBOSE >=2 then
+				print(ip,mid_ttl,"reply icmp echo")
+			end
 			right_ttl=mid_ttl-1
 			echo_reply_ttl=mid_ttl
 			icmp_echo_listener_signal['receive']=nil
@@ -197,10 +202,14 @@ function last_hop_binrary_guest_network_distance(iface,send_l3_sock,icmp_echo_li
 				break
 			end
 		elseif icmp_tole_listener_signal['receive']==true then
-			print(ip,mid_ttl,"receive icmp time limit")
+			if VERBOSE >=2 then
+				print(ip,mid_ttl,"receive icmp time limit")
+			end
 			if mid_ttl>=32 then 			--认为没有大于35跳的路由
 				mid_ttl=-1
-				print(ip," hop more than 32")
+				if VERBOSE >=2 then
+					print(ip," hop more than 32")
+				end
 				break
 			else
 				left_ttl=mid_ttl+1
@@ -208,7 +217,9 @@ function last_hop_binrary_guest_network_distance(iface,send_l3_sock,icmp_echo_li
 				icmp_tole_listener_signal['receive']=nil
 			end
 		else
-			print(ip,mid_ttl,"send again")
+			if VERBOSE >=2 then
+				print(ip,mid_ttl,"send again")
+			end
 			left_ttl=mid_ttl  --默认未到达目标，中间路由器未回应，进一步扩大ttl
 			times=times+1
 			if times>2 then
@@ -224,9 +235,13 @@ function last_hop_binrary_guest_network_distance(iface,send_l3_sock,icmp_echo_li
 	mid_ttl=math.floor(mid_ttl)
 	if times>2 then
 		if mid_ttl+1==echo_reply_ttl then
-			print(ip,"last hop no reply,no need to traceroute")
+			if VERBOSE >=1 then
+				print(ip,"last hop no reply,no need to traceroute")
+			end
 		else
-			print(ip,"middle router no reply,binrary can not deal")
+			if VERBOSE >=1 then
+				print(ip,"middle router no reply,binrary can not deal")
+			end
 		end
 	end
 
@@ -237,12 +252,18 @@ function last_hop_binrary_guest_network_distance(iface,send_l3_sock,icmp_echo_li
 		guess_ttl=echo_reply_ttl
 		ctrl_info['binrary_send']=ctrl_info['binrary_send']+send_number
 		ctrl_info['binrary_get']=ctrl_info['binrary_get']+1
-		print(ip,guess_ttl,ttl_from_target_to_source,"difference:",guess_ttl-ttl_from_target_to_source,send_number,left_ttl)
+		if VERBOSE >=0 then
+			print(ip,guess_ttl,ttl_from_target_to_source,"difference:",guess_ttl-ttl_from_target_to_source,send_number,left_ttl)
+		end
 	else
 		if echo_reply_ttl ~=-1 then
-			print("guest_network_distance ONLY_ECHO_REPLY",echo_reply_ttl,time_limit_ttl)
+			if VERBOSE >=1 then
+				print("guest_network_distance ONLY_ECHO_REPLY",echo_reply_ttl,time_limit_ttl)
+			end
 		else
-			print("guest_network_distance NO_ECHO_REPLY",echo_reply_ttl,time_limit_ttl)
+			if VERBOSE >=1 then
+				print("guest_network_distance NO_ECHO_REPLY",echo_reply_ttl,time_limit_ttl)
+			end
 		end
 	end
 	return guess_ttl
@@ -253,10 +274,8 @@ end
 -- The Action Section --
 --action = function(host, port)
 
-function last_hop_binrary(dst_ip,iface,ctrl_info,send_l3_sock)
-
-
-	print("action:",dst_ip)
+function last_hop_binrary(dst_ip,iface,ctrl_info,send_l3_sock,VERBOSE)
+	print("last_hop_binrary:",dst_ip)
 	--建立发送l3层报文的raw socket
 	--用于发送设置了ttl的探测末跳报文
 	-- local send_l3_sock = nmap.new_dnet()
@@ -271,7 +290,7 @@ function last_hop_binrary(dst_ip,iface,ctrl_info,send_l3_sock)
 	icmp_tole_listener_signal['status']=0
 	icmp_tole_listener_signal['guest']=1
 	icmp_tole_listener_signal['last_hop']=0		--是否收到最后一跳
-	local icmp_tole_listener_handler=stdnse.new_thread(icmp_tole_listener,icmp_tole_listener_signal,dst_ip,iface)
+	local icmp_tole_listener_handler=stdnse.new_thread(icmp_tole_listener,icmp_tole_listener_signal,dst_ip,iface,VERBOSE)
 
 	--建立监听线程，用于接收icmp echo respone报文
 	--
@@ -281,20 +300,23 @@ function last_hop_binrary(dst_ip,iface,ctrl_info,send_l3_sock)
 	local icmp_echo_listener_condvar = nmap.condvar(icmp_echo_listener_signal)
 	icmp_echo_listener_signal['status']=0
 	icmp_echo_listener_signal['left_ttl']=0
-	local icmp_echo_listener_handler=stdnse.new_thread(icmp_echo_listener,icmp_echo_listener_signal,dst_ip,iface)
+	local icmp_echo_listener_handler=stdnse.new_thread(icmp_echo_listener,icmp_echo_listener_signal,dst_ip,iface,VERBOSE)
 
 	stdnse.sleep(1)
 
-	local guest_ttl=last_hop_binrary_guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icmp_tole_listener_signal,dst_ip,ctrl_info)
+	local guest_ttl=last_hop_binrary_guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icmp_tole_listener_signal,dst_ip,ctrl_info,VERBOSE)
 
 	if guest_ttl>1 then
-		print(dst_ip,guest_ttl,"guess_lasthop_success,send packet to get last hop...")
-		set_ttl_to_ping(iface,send_l3_sock,dst_ip,guest_ttl-1)
+		-- set_ttl_to_ping(iface,send_l3_sock,dst_ip,guest_ttl-1)
 		--stdnse.sleep(2)
 	elseif guest_ttl==1 then
-		print(dst_ip,"target in intranet ")
+		if VERBOSE >=1 then
+			print(dst_ip,"target in intranet ")
+		end
 	else
-		print(dst_ip,"guest_ttl_fail")
+		if VERBOSE >=1 then
+			print(dst_ip,"guest_ttl_fail")
+		end
 		--return false
 	end
 
@@ -303,7 +325,9 @@ function last_hop_binrary(dst_ip,iface,ctrl_info,send_l3_sock)
 		if coroutine.status(icmp_tole_listener_handler)=="dead" then
 			icmp_tole_listener_handler=nil
 		else
-			print(dst_ip,"wait icmp time to live exceeded listener end...")
+			if VERBOSE >=1	then
+				print("last_hop_binrary",dst_ip,"wait icmp time to live exceeded listener end...")
+			end
 			icmp_tole_listener_signal['status']=1
 			icmp_tole_listener_condvar("wait")
 			--print("wait icmp test...")
@@ -315,7 +339,9 @@ function last_hop_binrary(dst_ip,iface,ctrl_info,send_l3_sock)
 			icmp_echo_listener_handler=nil
 		else 
 			--send again udp
-			print("wait for icmp echo listener end...")
+			if VERBOSE >=1 then
+				print("last_hop_binrary",dst_ip,"wait for icmp echo listener end...")
+			end
 			icmp_echo_listener_signal['status']=1
 			icmp_echo_listener_condvar("wait")
 		end

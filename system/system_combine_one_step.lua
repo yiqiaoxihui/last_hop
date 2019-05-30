@@ -44,7 +44,7 @@ categories = {"discovery", "safe"}
 --
 -- @param icmp_pu_listener function name
 -- @param send_l3_sock l3 layer raw socket
-local function icmp_pu_listener(send_l3_sock,signal,ip,iface)
+local function icmp_pu_listener(send_l3_sock,signal,ip,iface,VERBOSE)
 	--print("\nbegin icmp port unreachable listener...")
 	local icmp_pu_rec_socket=nmap.new_socket()
 	local capture_rule="(icmp[0]=3) and (icmp[1]=3) and host "..ip
@@ -63,7 +63,9 @@ local function icmp_pu_listener(send_l3_sock,signal,ip,iface)
 			signal['status']=1
 			signal['icmp_pu']=1
 			local l3_icmp_pu_packet = packet.Packet:new(l3_icmp_pu_data, #l3_icmp_pu_data)
-			print("icmp pu:",ip,l3_icmp_pu_packet.ip_src,l3_icmp_pu_packet.ip_dst)
+			if VERBOSE >=1 then
+				print("icmp pu:",ip,l3_icmp_pu_packet.ip_src,l3_icmp_pu_packet.ip_dst)
+			end
 			local raw_sender_data_in_l3_icmp_pu_packet=l3_icmp_pu_data:sub(l3_icmp_pu_packet.icmp_payload_offset+1)
 			--print("icmp payload size:",#raw_sender_data_in_l3_icmp_pu_packet)
 			local raw_sender_packet_in_l3_icmp_pu_packet=packet.Packet:new(raw_sender_data_in_l3_icmp_pu_packet,#raw_sender_data_in_l3_icmp_pu_packet)
@@ -81,7 +83,9 @@ local function icmp_pu_listener(send_l3_sock,signal,ip,iface)
 				left_ttl=64-raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl
 			end
 			--print("icmp port unreachable to get left_ttl value:",raw_sender_packet_in_l3_icmp_pu_packet.ip_ttl)
-			print(left_ttl+1,"set new ttl by icmp port unreachable")
+			if VERBOSE >=1 then
+				print(left_ttl+1,"set new ttl by icmp port unreachable")
+			end
 			--print("send new packet to get last hop...")
 			raw_sender_packet_in_l3_icmp_pu_packet:ip_set_ttl(left_ttl)
 			---print("packet.buf len:",#raw_sender_packet_in_l3_icmp_pu_packet.buf)
@@ -89,7 +93,9 @@ local function icmp_pu_listener(send_l3_sock,signal,ip,iface)
 			--由于对udp包和icmp包处理方式有差别，因此，仍然发送udp包，可能所走路径不一样了
 			send_l3_sock:ip_send(raw_sender_packet_in_l3_icmp_pu_packet.buf)
 		else
-			print("no icmp port unreachable packet back!")
+			if VERBOSE >=1 then
+				print("no icmp port unreachable packet back!")
+			end
 		---local p2=packet.Packet:build_ip_packet(p1.ip_src,p1.ip_dst,"123",0,0xbeef,0,left_ttl,"1")
 		end
 	end
@@ -98,7 +104,7 @@ local function icmp_pu_listener(send_l3_sock,signal,ip,iface)
 end
 --建立监听线程
 --用于接受icmp echo 响应报文
-local function icmp_echo_listener(signal,ip,iface)
+local function icmp_echo_listener(signal,ip,iface,VERBOSE)
 	--print("\nbegin icmp ping packet listener...")
 	local icmp_echo_rec_socket=nmap.new_socket()
 	local capture_rule="(icmp[0]=0) and (icmp[1]=0) and host "..ip
@@ -128,7 +134,7 @@ end
 --建立监听线程
 --用于接受icmp生存时间过期报文
 --从中提取末跳路由器信息
-local function icmp_tole_listener(signal,ip,iface)
+local function icmp_tole_listener(signal,ip,iface,VERBOSE)
 	--print("\nbegin icmp time to live exceeded packet listener...")
 	local icmp_tole_rec_socket=nmap.new_socket()
 	local str_hex_ip=ipOps.todword(ip)
@@ -159,7 +165,9 @@ local function icmp_tole_listener(signal,ip,iface)
 						--print(k,v)
 					end
 					if k=="ip_src" then
-						print("#get_last_hop",ip,dst_ip,v)
+						if VERBOSE >=0 then
+							print("#get_last_hop",ip,dst_ip,v)
+						end
 					end
 				end				
 			end
@@ -216,7 +224,7 @@ end
 -- @param icmp_echo_listener_signal:receive echo reply signal
 -- @param icmp_tole_listener_signal:receive time limit signal
 -- @param ip:target ip
-function combine_one_step_guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icmp_tole_listener_signal,ip,ctrl_info)
+function combine_one_step_guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icmp_tole_listener_signal,ip,ctrl_info,VERBOSE)
 	local pp=packet.Packet:new()
 	local ttl_from_target_to_source=0
 	local max_ttl = 30
@@ -236,8 +244,9 @@ function combine_one_step_guest_network_distance(iface,send_l3_sock,icmp_echo_li
 		icmp_echo_listener_signal['receive']=nil		--error:forget reset to nil,cause error guess
 		left_ttl=icmp_echo_listener_signal['left_ttl']
 		ttl_from_target_to_source=get_distance_from_target_to_source(icmp_echo_listener_signal['left_ttl'])
-		print(ip,ttl_from_target_to_source,"first predict ttl by ping success,receive reply")
-		print(ip,ttl_from_target_to_source,"set ttl and send")
+		if VERBOSE >=1 then
+			print(ip,ttl_from_target_to_source,"first predict ttl by ping success,receive reply")
+		end
 		if ttl_from_target_to_source>30 then  	--avoid too big ttl
 			set_ttl=15
 		else
@@ -247,101 +256,123 @@ function combine_one_step_guest_network_distance(iface,send_l3_sock,icmp_echo_li
 		set_ttl_to_ping(iface,send_l3_sock,ip,set_ttl)
 		stdnse.sleep(1) 	--test,网络延迟，必须等待2秒
 		if icmp_echo_listener_signal['receive']==true then
-			print(ip,ttl_from_target_to_source,"first predict ttl echo reply")
+			if VERBOSE >=2 then
+				print(ip,ttl_from_target_to_source,"first predict ttl echo reply")
+			end
 			icmp_echo_listener_signal['receive']=nil
 			echo_reply_ttl=set_ttl
 			-- set_ttl=ttl_from_target_to_source
 			while true do
 				set_ttl=set_ttl-1
-				print(ip,set_ttl,"set ttl and send")
 				send_number=send_number+1
 				set_ttl_to_ping(iface,send_l3_sock,ip,set_ttl)
 				stdnse.sleep(1)
 				if icmp_echo_listener_signal['receive']==true then
 					icmp_echo_listener_signal['receive']=nil
 					echo_reply_ttl=set_ttl
-					print(ip,set_ttl,"one step receive icmp echo reply")
+					if VERBOSE >=2 then
+						print(ip,set_ttl,"one step receive icmp echo reply")
+					end
 				elseif icmp_tole_listener_signal['receive']==true then
 					icmp_tole_listener_signal['receive']=nil
-					print(ip,set_ttl,"one step receive icmp time limit,break")
+					if VERBOSE >=2 then
+						print(ip,set_ttl,"one step receive icmp time limit,break")
+					end
 					time_limit_ttl=set_ttl
 					break
 				else
 					--nothing todo
 				end
 				if set_ttl<=1 then
-					print(ip,"one step move to zero")
+					if VERBOSE >=2 then
+						print(ip,"one step move to zero")
+					end
 					break
 				end
 			end
 		elseif icmp_tole_listener_signal['receive']==true then
-			print(ip,ttl_from_target_to_source,"first predict ttl time limit")
+			if VERBOSE >=2 then
+				print(ip,ttl_from_target_to_source,"first predict ttl time limit")
+			end
 			icmp_tole_listener_signal['receive']=nil
 			time_limit_ttl=set_ttl
 			-- set_ttl=ttl_from_target_to_source
 			while true do
 				set_ttl=set_ttl+1
-				print(ip,set_ttl,"set ttl and send")
 				send_number=send_number+1
 				set_ttl_to_ping(iface,send_l3_sock,ip,set_ttl)
 				stdnse.sleep(1)
 				if icmp_echo_listener_signal['receive']==true then
 					icmp_echo_listener_signal['receive']=nil
 					echo_reply_ttl=set_ttl
-					print(ip,set_ttl,"one step receive icmp echo reply,break")
+					if VERBOSE >=2 then
+						print(ip,set_ttl,"one step receive icmp echo reply,break")
+					end
 					break
 				elseif icmp_tole_listener_signal['receive']==true then
 					icmp_tole_listener_signal['receive']=nil
 					time_limit_ttl=set_ttl
-					print(ip,set_ttl,"one step receive icmp time limit")
+					if VERBOSE >=2 then
+						print(ip,set_ttl,"one step receive icmp time limit")
+					end
 				else
 					--nothing todo
 				end
 				if set_ttl>35 and set_ttl ~= time_limit_ttl then
-					print(ip,set_ttl,time_limit_ttl,"one step move more than 30")
+					if VERBOSE >=2 then
+						print(ip,set_ttl,time_limit_ttl,"one step move more than 30")
+					end
 					break
 				end
 			end
 		else
-			print(ip,"first send left ttl no reply")
+			if VERBOSE >=1 then
+				print(ip,"first send left ttl no reply")
+			end
 			-- set_ttl=ttl_from_target_to_source
 			while true do
 				set_ttl=set_ttl+1
-				print(ip,set_ttl,"first_no_reply_set_and_send,set ttl and send")
 				send_number=send_number+1
 				set_ttl_to_ping(iface,send_l3_sock,ip,set_ttl)
 				stdnse.sleep(1)
 				if icmp_echo_listener_signal['receive']==true then
 					icmp_echo_listener_signal['receive']=nil
 					echo_reply_ttl=set_ttl
-					print(ip,set_ttl,"one step receive icmp echo reply,break")
+					if VERBOSE >=2 then
+						print(ip,set_ttl,"one step receive icmp echo reply,break")
+					end
 					break
 				elseif icmp_tole_listener_signal['receive']==true then
 					icmp_tole_listener_signal['receive']=nil
 					time_limit_ttl=set_ttl
-					print(ip,set_ttl,"one step receive icmp time limit")
+					if VERBOSE >=2 then
+						print(ip,set_ttl,"one step receive icmp time limit")
+					end
 				else
 					--nothing todo
 				end
 				if set_ttl>30 and set_ttl ~= time_limit_ttl then
-					print(ip,set_ttl,time_limit_ttl,"one step move more than 30")
+					if VERBOSE >=2 then
+						print(ip,set_ttl,time_limit_ttl,"one step move more than 30")
+					end
 					break
 				end
 			end
 			if time_limit_ttl==echo_reply_ttl-1 then
 				guess_ttl=echo_reply_ttl
-				print(ip,guess_ttl,"get_by_no_reply,one step guess ttl success")
+				if VERBOSE >=1 then
+					print(ip,guess_ttl,"get_by_no_reply,one step guess ttl success")
+				end		
 			end
 			--mid_ttl=mid_ttl+0.1		--ip:90.196.109.225, left_ttl=9,right_ttl=10, mid_ttl=9,no any reply
 		end
 	else
-		print(ip,"first predict ttl by ping fail,no receive reply!")
+		if VERBOSE >=1 then
+			print(ip,"first predict ttl by ping fail,no receive reply!")
+		end				
 	end
 	if time_limit_ttl==echo_reply_ttl-1 then
 		guess_ttl=echo_reply_ttl
-		print(ip,guess_ttl,"one step guess ttl success")
-	else
-		print(ip,time_limit_ttl,echo_reply_ttl,"one step guess ttl fail")
 	end
 
 	icmp_echo_listener_signal['status']=1
@@ -350,7 +381,9 @@ function combine_one_step_guest_network_distance(iface,send_l3_sock,icmp_echo_li
 		send_number=send_number+1
 		ctrl_info['one_step_send']=ctrl_info['one_step_send']+send_number
 		ctrl_info['one_step_get']=ctrl_info['one_step_get']+1
-		print(ip,guess_ttl,ttl_from_target_to_source,"difference:",guess_ttl-ttl_from_target_to_source,send_number,left_ttl)
+		if VERBOSE >=0 then
+			print(ip,guess_ttl,ttl_from_target_to_source,"difference:",guess_ttl-ttl_from_target_to_source,send_number,left_ttl)
+		end
 	end
 	return guess_ttl
 	-- body
@@ -358,8 +391,8 @@ end
 -- The Action Section --
 --action = function(host, port)
 
-last_hop_combine_one_step = function(dst_ip,iface,ctrl_info,send_l3_sock)
-	print("action:",dst_ip)
+last_hop_combine_one_step = function(dst_ip,iface,ctrl_info,send_l3_sock,VERBOSE)
+	print("last_hop_combine_one_step:",dst_ip)
 	--建立发送l3层报文的raw socket
 	--用于发送设置了ttl的探测末跳报文
 	local send_l3_sock = nmap.new_dnet()
@@ -371,7 +404,7 @@ last_hop_combine_one_step = function(dst_ip,iface,ctrl_info,send_l3_sock)
 	local icmp_pu_listener_condvar = nmap.condvar(icmp_pu_listener_signal)
 	icmp_pu_listener_signal['status']=0 	--监听结束信号
 	icmp_pu_listener_signal['icmp_pu']=0 	--是否收到icmp端口不可达信号
-	local icmp_pu_listener_handler=stdnse.new_thread(icmp_pu_listener,send_l3_sock,icmp_pu_listener_signal,dst_ip,iface)
+	local icmp_pu_listener_handler=stdnse.new_thread(icmp_pu_listener,send_l3_sock,icmp_pu_listener_signal,dst_ip,iface,VERBOSE)
 
 	stdnse.sleep(1)
 	--建立监听线程，用于接收icmp生存时间过期报文
@@ -383,7 +416,7 @@ last_hop_combine_one_step = function(dst_ip,iface,ctrl_info,send_l3_sock)
 	icmp_tole_listener_signal['status']=0
 	icmp_tole_listener_signal['guest']=0   		--初始不启用网络距离猜测
 	icmp_tole_listener_signal['last_hop']=0		--是否收到最后一跳
-	local icmp_tole_listener_handler=stdnse.new_thread(icmp_tole_listener,icmp_tole_listener_signal,dst_ip,iface)
+	local icmp_tole_listener_handler=stdnse.new_thread(icmp_tole_listener,icmp_tole_listener_signal,dst_ip,iface,VERBOSE)
 
 	stdnse.sleep(1) 	--test,需要缓冲时间，保证线程全部启动
 	--方法1.发送udp大端口报文，从icmp端口不可达报文中提取网络距离
@@ -394,15 +427,21 @@ last_hop_combine_one_step = function(dst_ip,iface,ctrl_info,send_l3_sock)
 	--成功收到最后一跳
 	--error:必须两者同时成立，可能出现并没有收到端口不可达，但是却收到time limit
 	if (icmp_tole_listener_signal['last_hop']==1) and (icmp_pu_listener_signal['icmp_pu']==1) then
-		print(dst_ip,"method1:udp_to_get_last_hop")
+		if VERBOSE >=1 then
+			print(dst_ip,"method1:udp_to_get_last_hop")
+		end
 		icmp_tole_listener_signal['status']=1
 		ctrl_info['udp_get']=ctrl_info['udp_get']+1
 	--未收到time limit,但是收到端口不可达包，说明最后一跳不予响应
 	elseif icmp_pu_listener_signal['icmp_pu']==1 then
-		print(dst_ip,"receive icmp port unreachable packet,but last hop no reply!")
+		if VERBOSE >=1 then
+			print(dst_ip,"receive icmp port unreachable packet,but last hop no reply!")
+		end
 		icmp_tole_listener_signal['status']=1	--停止监听time to limit
 	else
-		print(dst_ip,"method2:begin to guest ttl")
+		if VERBOSE >=1 then
+			print(dst_ip,"method2:begin to guest ttl")
+		end
 		--未收到端口不可达包，只能二分法猜测
 		icmp_tole_listener_signal['guest']=1 	--开始猜测
 		icmp_pu_listener_signal['status']=1		--退出端口不可达监听
@@ -416,27 +455,30 @@ last_hop_combine_one_step = function(dst_ip,iface,ctrl_info,send_l3_sock)
 		local icmp_echo_listener_condvar = nmap.condvar(icmp_echo_listener_signal)
 		icmp_echo_listener_signal['status']=0
 		icmp_echo_listener_signal['left_ttl']=0
-		local icmp_echo_listener_handler=stdnse.new_thread(icmp_echo_listener,icmp_echo_listener_signal,dst_ip,iface)
+		local icmp_echo_listener_handler=stdnse.new_thread(icmp_echo_listener,icmp_echo_listener_signal,dst_ip,iface,VERBOSE)
 
 		stdnse.sleep(2)  --test,必须等待，否则线程未启动完成，可能已经发送了探测包
-		local guest_ttl=combine_one_step_guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icmp_tole_listener_signal,dst_ip,ctrl_info)
+		local guest_ttl=combine_one_step_guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icmp_tole_listener_signal,dst_ip,ctrl_info,VERBOSE)
 		icmp_echo_listener_signal['status']=1 	--退出echo reply监听
 		icmp_tole_listener_signal['guest']=0	--猜测ttl结束
 		if guest_ttl>1 then
-			print(dst_ip,guest_ttl,"guess_lasthop_success,send packet to get last hop...")
-			set_ttl_to_ping(iface,send_l3_sock,dst_ip,guest_ttl-1)
-			stdnse.sleep(1)			--needtotest
-			if icmp_tole_listener_signal['last_hop']==0 then
-				print(dst_ip,"have guessed ttl,but no get last_hop")
-				set_ttl_to_ping(iface,send_l3_sock,dst_ip,guest_ttl-1)
-				--stdnse.sleep(1)
-			else
-				print("get last hop by guess success")
-			end
+			-- set_ttl_to_ping(iface,send_l3_sock,dst_ip,guest_ttl-1)
+			-- stdnse.sleep(1)			--needtotest
+			-- if icmp_tole_listener_signal['last_hop']==0 then
+			-- 	print(dst_ip,"have guessed ttl,but no get last_hop")
+			-- 	set_ttl_to_ping(iface,send_l3_sock,dst_ip,guest_ttl-1)
+			-- 	--stdnse.sleep(1)
+			-- else
+			-- 	print("get last hop by guess success")
+			-- end
 		elseif guest_ttl==1 then
-			print(dst_ip,"target in intranet")
+			if VERBOSE >=1 then
+				print(dst_ip,"target in intranet")
+			end
 		else
-			print(dst_ip,"guest_ttl_fail")
+			if VERBOSE >=1 then
+				print(dst_ip,"guest_ttl_fail")
+			end
 			--return false
 		end
 
@@ -446,7 +488,9 @@ last_hop_combine_one_step = function(dst_ip,iface,ctrl_info,send_l3_sock)
 				icmp_echo_listener_handler=nil
 			else 
 				--send again udp
-				print("wait icmp echo listener end...")
+				if VERBOSE >=1 then
+					print("last_hop_combine_one_step",dst_ip,"wait icmp echo listener end...")
+				end
 				icmp_echo_listener_signal['status']=1
 				icmp_echo_listener_condvar("wait")
 			end
@@ -457,7 +501,9 @@ last_hop_combine_one_step = function(dst_ip,iface,ctrl_info,send_l3_sock)
 		if coroutine.status(icmp_tole_listener_handler)=="dead" then
 			icmp_tole_listener_handler=nil
 		else
-			print(dst_ip,"wait icmp time to live exceeded listener end...")
+			if VERBOSE >=1 then
+				print("last_hop_combine_one_step",dst_ip,"wait icmp time to live exceeded listener end...")
+			end
 			icmp_tole_listener_signal['status']=1
 			icmp_tole_listener_condvar("wait")
 			--print("wait icmp test...")
@@ -468,7 +514,9 @@ last_hop_combine_one_step = function(dst_ip,iface,ctrl_info,send_l3_sock)
 		if coroutine.status(icmp_pu_listener_handler)=="dead" then
 			icmp_pu_listener_handler=nil
 		else
-			print("wait icmp port unreachable listener end...")
+			if VERBOSE >=1 then
+				print("last_hop_combine_one_step",dst_ip,"wait icmp port unreachable listener end...")
+			end
 			icmp_pu_listener_signal['status']=1 --先后顺序搞反，浪费大量时间
 			icmp_pu_listener_condvar("wait")
 		end

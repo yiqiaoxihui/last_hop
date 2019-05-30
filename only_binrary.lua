@@ -241,7 +241,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 			end
 		else
 			print(ip,mid_ttl,"send again")
-			left_ttl=left_ttl+1  --默认未到达目标，中间路由器未回应，进一步扩大ttl
+			left_ttl=mid_ttl  --默认未到达目标，中间路由器未回应，进一步扩大ttl
 			times=times+1
 			if times>2 then
 				break
@@ -268,16 +268,22 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 	if echo_reply_ttl==(time_limit_ttl+1) then
 		guess_ttl=echo_reply_ttl
 		print(ip,guess_ttl,ttl_from_target_to_source,"difference:",guess_ttl-ttl_from_target_to_source,send_number,left_ttl)
+	else
+		if echo_reply_ttl ~=-1 then
+			print("guest_network_distance ONLY_ECHO_REPLY",echo_reply_ttl,time_limit_ttl)
+		else
+			print("guest_network_distance NO_ECHO_REPLY",echo_reply_ttl,time_limit_ttl)
+		end
 	end
 	return guess_ttl
 	-- body
 end
 
+
 -- The Action Section --
 --action = function(host, port)
 
 action = function(host)
-	print("\n\n**************************************************",host.ip)
 	local ifname = nmap.get_interface() or host.interface
 	if ( not(ifname) ) then
 		return fail("Failed to determine the network interface name")
@@ -358,8 +364,6 @@ action = function(host)
 	until icmp_echo_listener_handler==nil
 
 	send_l3_sock:ip_close()
-
-	print("**************************************************\n\n")
 	return true
 end
 
