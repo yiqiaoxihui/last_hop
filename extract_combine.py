@@ -70,6 +70,8 @@ middle_not_reply=0
 method_2_send=0
 method_2_guess_success_traceroute_send=0
 method_1_traceroute_send=0
+ONLY_ECHO_REPLY=0
+NO_ECHO_REPLY=0
 while True:
 	line = fr.readline()
 	if not line:
@@ -143,8 +145,8 @@ while True:
 	# elif "one step guess ttl success" in line:
 	# 	one_step_success=one_step_success+1
 	# 	fw_oss.write(line.split()[0]+"\n")
-	elif "one step guess ttl fail" in line:
-		traceroute_packet+=0	#int(line.split()[2])--未成功获取末跳的，发包不算在内
+	# elif "one step guess ttl fail" in line:
+	# 	traceroute_packet+=0	#int(line.split()[2])--未成功获取末跳的，发包不算在内
 	elif "set new ttl by icmp port unreachable" in line:
 		traceroute_packet=traceroute_packet+int(line.split()[0])
 		method_1_traceroute_send+=int(line.split()[0])
@@ -156,6 +158,10 @@ while True:
 	# 	guess_lasthop_success=guess_lasthop_success+1
 	elif "middle router no reply,binrary can not deal" in line:
 		middle_not_reply+=1
+	elif "NO_ECHO_REPLY" in line:
+		NO_ECHO_REPLY+=1
+	elif "ONLY_ECHO_REPLY" in line:
+		ONLY_ECHO_REPLY+=1
 	else:
 		pass
 if action==0:
@@ -222,6 +228,7 @@ else:
 print "--first ping get,first_ping_no_reply:",first_predict_ttl_success,first_ping_no_reply
 print "----first_send_ping_predict_ttl_no_reply,get_by_first_send_ping_predict_ttl_no_reply:",
 print first_send_ping_predict_ttl_no_reply,get_by_first_send_ping_predict_ttl_no_reply
+print "ONLY_ECHO_REPLY,NO_ECHO_REPLY:",ONLY_ECHO_REPLY,NO_ECHO_REPLY
 print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
 
