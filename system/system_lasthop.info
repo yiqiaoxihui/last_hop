@@ -1,0 +1,16 @@
+all      send,get,avg   226774  44060   5.1469359963686
+udp      send,get,avg   15      1       15
+one_step send,get,avg   85      14      6.0714285714286
+binrary  send,get,avg   226674  44045   5.1464184356908
+last_hop_binrary:       222.248.217.124
+195.201.77.76   23      0       difference:     23      5       23
+36.77.173.33    27      0       difference:     27      5       27
+134.130.184.6   25      0       difference:     25      5       25
+92.29.246.2     24      0       difference:     24      6       24
+all send ,get,avg       226795  44064   5.146945352215
+__________________
+Pre-scan script results:
+|_system_lasthop: true
+WARNING: No targets were specified, so 0 hosts scanned.
+Nmap done: 0 IP addresses (0 hosts up) scanned in 76605.66 seconds
+

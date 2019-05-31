@@ -252,6 +252,7 @@ function last_hop_binrary_guest_network_distance(iface,send_l3_sock,icmp_echo_li
 		guess_ttl=echo_reply_ttl
 		ctrl_info['binrary_send']=ctrl_info['binrary_send']+send_number
 		ctrl_info['binrary_get']=ctrl_info['binrary_get']+1
+		ctrl_info['traceroute_send']=ctrl_info['traceroute_send']+guess_ttl
 		if VERBOSE >=0 then
 			print(ip,guess_ttl,ttl_from_target_to_source,"difference:",guess_ttl-ttl_from_target_to_source,send_number,left_ttl)
 		end

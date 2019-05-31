@@ -39,7 +39,7 @@ categories = {"discovery", "safe"}
 --
 -- @param icmp_pu_listener function name
 -- @param send_l3_sock l3 layer raw socket
-local function icmp_pu_listener(send_l3_sock,signal,ip,iface,VERBOSE)
+local function icmp_pu_listener(send_l3_sock,signal,ip,iface,VERBOSE,ctrl_info)
 	--print("\nbegin icmp port unreachable listener...")
 	local icmp_pu_rec_socket=nmap.new_socket()
 	local capture_rule="(icmp[0]=3) and (icmp[1]=3) and host "..ip
@@ -83,6 +83,7 @@ local function icmp_pu_listener(send_l3_sock,signal,ip,iface,VERBOSE)
 			end
 			--print("send new packet to get last hop...")
 			raw_sender_packet_in_l3_icmp_pu_packet:ip_set_ttl(left_ttl)
+			ctrl_info['traceroute_send']=ctrl_info['traceroute_send']+left_ttl+1
 			---print("packet.buf len:",#raw_sender_packet_in_l3_icmp_pu_packet.buf)
 			-- set_ttl_to_ping(iface,send_l3_sock,ip,left_ttl)
 			--由于对udp包和icmp包处理方式有差别，因此，仍然发送udp包，可能所走路径不一样了
@@ -295,6 +296,7 @@ function combine_binrary_guest_network_distance(iface,send_l3_sock,icmp_echo_lis
 		guess_ttl=echo_reply_ttl
 		ctrl_info['binrary_send']=ctrl_info['binrary_send']+send_number
 		ctrl_info['binrary_get']=ctrl_info['binrary_get']+1
+		ctrl_info['traceroute_send']=ctrl_info['traceroute_send']+guess_ttl
 		if VERBOSE >=0 then
 			print(ip,guess_ttl,ttl_from_target_to_source,"difference:",guess_ttl-ttl_from_target_to_source,send_number,left_ttl)
 		end
@@ -331,7 +333,7 @@ function last_hop_combine_binrary(dst_ip,iface,ctrl_info,send_l3_sock,VERBOSE)
 	local icmp_pu_listener_condvar = nmap.condvar(icmp_pu_listener_signal)
 	icmp_pu_listener_signal['status']=0 	--监听结束信号
 	icmp_pu_listener_signal['icmp_pu']=0 	--是否收到icmp端口不可达信号
-	local icmp_pu_listener_handler=stdnse.new_thread(icmp_pu_listener,send_l3_sock,icmp_pu_listener_signal,dst_ip,iface,VERBOSE)
+	local icmp_pu_listener_handler=stdnse.new_thread(icmp_pu_listener,send_l3_sock,icmp_pu_listener_signal,dst_ip,iface,VERBOSE,ctrl_info)
 
 	stdnse.sleep(1)
 	--建立监听线程，用于接收icmp生存时间过期报文

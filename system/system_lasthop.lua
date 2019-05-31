@@ -74,6 +74,7 @@ local function method_control(dst_ip,iface,result,ctrl_info,send_l3_sock,VERBOSE
 	print("udp      send,get,avg",ctrl_info['udp_send'],ctrl_info['udp_get'],ctrl_info['udp_send']/ctrl_info['udp_get'])
 	print("one_step send,get,avg",ctrl_info['one_step_send'],ctrl_info['one_step_get'],ctrl_info['one_step_send']/ctrl_info['one_step_get'])
 	print("binrary  send,get,avg",ctrl_info['binrary_send'],ctrl_info['binrary_get'],ctrl_info['binrary_send']/ctrl_info['binrary_get'])
+	print("trace    send,get,avg",ctrl_info['traceroute_send'],all_get,ctrl_info['traceroute_send']/all_get)
 	--进入默认方法upd和步进的决策
 	if ctrl_info['now_method'] ==0 then
 		last_hop_combine_one_step(dst_ip,iface,ctrl_info,send_l3_sock,VERBOSE)
@@ -150,6 +151,7 @@ action=function()
 	ctrl_info['now_method']=0
 	ctrl_info['all_send']=0
 	ctrl_info['all_get']=0
+	ctrl_info['traceroute_send']=0
 	local all_send
 	local all_get
 	local last_hop_thread_handler={}

@@ -44,7 +44,7 @@ categories = {"discovery", "safe"}
 --
 -- @param icmp_pu_listener function name
 -- @param send_l3_sock l3 layer raw socket
-local function icmp_pu_listener(send_l3_sock,signal,ip,iface,VERBOSE)
+local function icmp_pu_listener(send_l3_sock,signal,ip,iface,VERBOSE,ctrl_info)
 	--print("\nbegin icmp port unreachable listener...")
 	local icmp_pu_rec_socket=nmap.new_socket()
 	local capture_rule="(icmp[0]=3) and (icmp[1]=3) and host "..ip
@@ -91,6 +91,7 @@ local function icmp_pu_listener(send_l3_sock,signal,ip,iface,VERBOSE)
 			---print("packet.buf len:",#raw_sender_packet_in_l3_icmp_pu_packet.buf)
 			-- set_ttl_to_ping(iface,send_l3_sock,ip,left_ttl)
 			--由于对udp包和icmp包处理方式有差别，因此，仍然发送udp包，可能所走路径不一样了
+			ctrl_info['traceroute_send']=ctrl_info['traceroute_send']+left_ttl+1
 			send_l3_sock:ip_send(raw_sender_packet_in_l3_icmp_pu_packet.buf)
 		else
 			if VERBOSE >=1 then
@@ -381,6 +382,7 @@ function combine_one_step_guest_network_distance(iface,send_l3_sock,icmp_echo_li
 		send_number=send_number+1
 		ctrl_info['one_step_send']=ctrl_info['one_step_send']+send_number
 		ctrl_info['one_step_get']=ctrl_info['one_step_get']+1
+		ctrl_info['traceroute_send']=ctrl_info['traceroute_send']+guess_ttl
 		if VERBOSE >=0 then
 			print(ip,guess_ttl,ttl_from_target_to_source,"difference:",guess_ttl-ttl_from_target_to_source,send_number,left_ttl)
 		end

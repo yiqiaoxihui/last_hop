@@ -306,6 +306,7 @@ function last_hop_one_step_guest_network_distance(iface,send_l3_sock,icmp_echo_l
 		send_number=send_number+1	--first ping
 		ctrl_info['one_step_send']=ctrl_info['one_step_send']+send_number
 		ctrl_info['one_step_get']=ctrl_info['one_step_get']+1
+		ctrl_info['traceroute_send']=ctrl_info['traceroute_send']+guess_ttl
 		if VERBOSE >=0 then
 			print(ip,guess_ttl,ttl_from_target_to_source,"difference:",guess_ttl-ttl_from_target_to_source,send_number,left_ttl)
 		end
