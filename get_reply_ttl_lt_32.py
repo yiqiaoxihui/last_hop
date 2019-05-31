@@ -14,10 +14,7 @@ while True:
 		break
 	if "difference" in line:
 		left_ttl=int(line.split()[6])
-		if left_ttl_dic.has_key(left_ttl) == False:
-			left_ttl_dic[left_ttl]=1
-		else:
-			left_ttl_dic[left_ttl]+=1
+
 		if left_ttl<=64:
 			ip=line.split()[0]
 			guess_ttl=line.split()[1]
@@ -29,6 +26,10 @@ while True:
 			else:
 				init_ttl_dic[init_ttl]+=1
 			if init_ttl>50:
+				if left_ttl_dic.has_key(left_ttl) == False:
+					left_ttl_dic[left_ttl]=1
+				else:
+					left_ttl_dic[left_ttl]+=1
 				if left_ttl<min_left_ttl_when_init_ttl64['left_ttl']:
 					min_left_ttl_when_init_ttl64['left_ttl']=left_ttl
 					min_left_ttl_when_init_ttl64['ip']=ip
@@ -40,8 +41,7 @@ while True:
 fr.close()
 fw.close()
 for key in left_ttl_dic:
-	if key<=40:
-		print key,left_ttl_dic[key]
+	print key,left_ttl_dic[key]
 print "init_ttl"
 for key in init_ttl_dic:
 	if key<=64:
