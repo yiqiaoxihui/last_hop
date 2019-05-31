@@ -406,7 +406,7 @@ last_hop_combine_one_step = function(dst_ip,iface,ctrl_info,send_l3_sock,VERBOSE
 	local icmp_pu_listener_condvar = nmap.condvar(icmp_pu_listener_signal)
 	icmp_pu_listener_signal['status']=0 	--监听结束信号
 	icmp_pu_listener_signal['icmp_pu']=0 	--是否收到icmp端口不可达信号
-	local icmp_pu_listener_handler=stdnse.new_thread(icmp_pu_listener,send_l3_sock,icmp_pu_listener_signal,dst_ip,iface,VERBOSE)
+	local icmp_pu_listener_handler=stdnse.new_thread(icmp_pu_listener,send_l3_sock,icmp_pu_listener_signal,dst_ip,iface,VERBOSE,ctrl_info)
 
 	stdnse.sleep(1)
 	--建立监听线程，用于接收icmp生存时间过期报文
