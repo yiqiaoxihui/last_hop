@@ -194,29 +194,6 @@ local function set_ttl_to_ping(iface,send_l3_sock,dst_ip,ttl)
 	send_l3_sock:ip_send(ip.buf)
 end
 
-local function get_distance_from_target_to_source(left_ttl)
-	--print("left_ttl:",left_ttl)
-	local ttl=0
-	if left_ttl>20 then
-		if left_ttl>64 then
-			if left_ttl>128 then
-				if left_ttl>200 then
-					ttl=255-left_ttl
-				else
-					ttl=200-left_ttl
-				end
-			else
-				ttl=128-left_ttl
-			end
-		else
-			ttl=64-left_ttl
-		end
-	else
-		ttl=30-left_ttl
-	end
-	return ttl+1
-end
-
 --猜测到目标的网络距离
 --
 -- @param iface
@@ -244,7 +221,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 		print(ip,"set ttl and send:",mid_ttl)
 		send_number=send_number+1
 		set_ttl_to_ping(iface,send_l3_sock,ip,mid_ttl)
-		stdnse.sleep(1) 	--test,网络延迟，必须等待2秒
+		stdnse.sleep(2) 	--test,网络延迟，必须等待2秒
 		if icmp_echo_listener_signal['receive']==true then
 			print(ip,mid_ttl,"reply icmp echo")
 			right_ttl=mid_ttl-1

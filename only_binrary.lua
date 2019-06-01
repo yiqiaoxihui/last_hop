@@ -142,7 +142,7 @@ end
 local function get_distance_from_target_to_source(left_ttl)
 	--print("left_ttl:",left_ttl)
 	local ttl=0
-	if left_ttl>30 then
+	if left_ttl>27 then
 		if left_ttl>64 then
 			if left_ttl>128 then
 				if left_ttl>200 then
@@ -157,7 +157,7 @@ local function get_distance_from_target_to_source(left_ttl)
 			ttl=64-left_ttl
 		end
 	else
-		ttl=30-left_ttl
+		ttl=31-left_ttl
 	end
 	return ttl+1
 end
@@ -209,8 +209,8 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 	local deviation_distance = distance	--or 5
 	local send_number=0
 	local guess_ttl=0
-	local left_ttl=1
-	local right_ttl=30
+	local left_ttl=2
+	local right_ttl=33
 	local deviation_fail=0
 	local time_limit_ttl=-1		--max time limit ttl
 	local echo_reply_ttl=-1		--min echo reply ttl
@@ -219,33 +219,33 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 		print(ip,"set ttl and send:",mid_ttl)
 		send_number=send_number+1
 		set_ttl_to_ping(iface,send_l3_sock,ip,mid_ttl)
-		stdnse.sleep(1) 	--test,网络延迟，必须等待2秒
+		stdnse.sleep(2) 	--test,网络延迟，必须等待2秒
 		if icmp_echo_listener_signal['receive']==true then
 			print(ip,mid_ttl,"reply icmp echo")
 			right_ttl=mid_ttl-1
 			echo_reply_ttl=mid_ttl
 			icmp_echo_listener_signal['receive']=nil
-			if mid_ttl<=1 then
-				break
-			end
+			-- if mid_ttl<=2 then
+			-- 	break
+			-- end
 		elseif icmp_tole_listener_signal['receive']==true then
 			print(ip,mid_ttl,"receive icmp time limit")
-			if mid_ttl>=30 then 			--认为没有大于35跳的路由
-				mid_ttl=-1
-				print(ip," hop more than 30")
-				break
-			else
-				left_ttl=mid_ttl+1
-				time_limit_ttl=mid_ttl
-				icmp_tole_listener_signal['receive']=nil
-			end
+			-- if mid_ttl>=33 then 			--认为没有大于35跳的路由
+			-- 	mid_ttl=-1
+			-- 	print(ip," hop more than 33")
+			-- 	break
+			-- else
+			left_ttl=mid_ttl+1
+			time_limit_ttl=mid_ttl
+			icmp_tole_listener_signal['receive']=nil
+			-- end
 		else
 			print(ip,mid_ttl,"send again")
-			left_ttl=mid_ttl  --默认未到达目标，中间路由器未回应，进一步扩大ttl
+			left_ttl=mid_ttl+1  --默认未到达目标，中间路由器未回应，进一步扩大ttl
 			times=times+1
-			if times>2 then
-				break
-			end
+			-- if times>2 then
+			-- 	break
+			-- end
 			--mid_ttl=mid_ttl+0.1		--ip:90.196.109.225, left_ttl=9,right_ttl=10, mid_ttl=9,no any reply
 		end
 		if echo_reply_ttl == (time_limit_ttl+1) then
@@ -270,9 +270,9 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 		print(ip,guess_ttl,ttl_from_target_to_source,"difference:",guess_ttl-ttl_from_target_to_source,send_number,left_ttl)
 	else
 		if echo_reply_ttl ~=-1 then
-			print("guest_network_distance ONLY_ECHO_REPLY",echo_reply_ttl,time_limit_ttl)
+			print(ip,"guest_network_distance ONLY_ECHO_REPLY",echo_reply_ttl,time_limit_ttl)
 		else
-			print("guest_network_distance NO_ECHO_REPLY",echo_reply_ttl,time_limit_ttl)
+			print(ip,"guest_network_distance NO_ECHO_REPLY",echo_reply_ttl,time_limit_ttl)
 		end
 	end
 	return guess_ttl

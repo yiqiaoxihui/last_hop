@@ -133,6 +133,9 @@ action=function()
 	local dst_ip=stdnse.get_script_args("ip")
 	local ip_file=stdnse.get_script_args("ip_file")
 	local VERBOSE=stdnse.get_script_args("verbose")
+	local thread_count=15
+	thread_count=stdnse.get_script_args("thread")
+	thread_count=tonumber(thread_count)
 	VERBOSE=tonumber(VERBOSE)
 	if (not dst_ip)  and (not ip_file) then
 		return fail("error:no target input")
@@ -155,12 +158,14 @@ action=function()
 	local all_send
 	local all_get
 	local last_hop_thread_handler={}
+	local last_hop_result={}
+	local last_hop_condvar = nmap.condvar(last_hop_result)
 	if dst_ip then
 		local ip, err = ipOps.expand_ip(dst_ip)
 		if not err then
 			-- local test={}
 			-- test[1]="asfd"
-			local last_hop_co = stdnse.new_thread(method_control,ip_list[i],iface,last_hop_result,ctrl_info,send_l3_sock,VERBOSE)
+			local last_hop_co = stdnse.new_thread(method_control,dst_ip,iface,last_hop_result,ctrl_info,send_l3_sock,VERBOSE)
 			last_hop_thread_handler[last_hop_co] = true
 			-- last_hop_main(dst_ip,iface)
 			-- print(test[1])
@@ -169,27 +174,20 @@ action=function()
 			return true
 		end
 	elseif ip_file then 		--从文件读入
-		
-		local last_hop_result={}
-		local last_hop_condvar = nmap.condvar(last_hop_result)
-		
 		--ip_file="ip10wt"
 		local ip_count=0
 		local ip_list={}
 		for line in io.lines(ip_file) do
-			local ip=stdnse.strsplit(" ", line)
-			-- print(line,ip[1])
-			--print(ip[1])
-			--print(line,":send udp packet, port:65534")
-			local temp, err = ipOps.expand_ip(ip[1])
+			local ip=line
+			local temp, err = ipOps.expand_ip(ip)
 			if not err then
-				print(ip[1],ip_count)
-				ip_count=ip_count+1
-				table.insert(ip_list,ip[1])
+				print(ip,ip_count)
+				table.insert(ip_list,ip)
 			else
-				print(ip[1],"error:illege ip")
+				print("error:illege ip:",ip)
 			end
-			if #ip_list >= 15 then
+			-- stdnse.sleep(1)
+			if #ip_list >= thread_count then
 				-- print('begin thread last_hop',ip_count)
 				for i in pairs(ip_list) do
 					local last_hop_co = stdnse.new_thread(method_control,ip_list[i],iface,last_hop_result,ctrl_info,send_l3_sock,VERBOSE)
