@@ -12,7 +12,7 @@ ip=sys.argv[4]
 print script_path, file_path
 packet_type_dic={}
 
-for key in range(10,100,10):
+for key in range(100,1000,50):
 	print "key:",key
 	time.sleep(3)
 	fw=open("ip.1w.bingfa"+str(key),"w")
