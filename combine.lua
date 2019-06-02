@@ -197,7 +197,7 @@ end
 local function get_distance_from_target_to_source(left_ttl)
 	--print("left_ttl:",left_ttl)
 	local ttl=0
-	if left_ttl>20 then
+	if left_ttl>26 then
 		if left_ttl>64 then
 			if left_ttl>128 then
 				if left_ttl>200 then
@@ -212,7 +212,7 @@ local function get_distance_from_target_to_source(left_ttl)
 			ttl=64-left_ttl
 		end
 	else
-		ttl=30-left_ttl
+		ttl=31-left_ttl
 	end
 	return ttl+1
 end
@@ -246,7 +246,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 		ttl_from_target_to_source=get_distance_from_target_to_source(icmp_echo_listener_signal['left_ttl'])
 		print(ip,ttl_from_target_to_source,"first predict ttl by ping success,receive reply")
 		print(ip,ttl_from_target_to_source,"set ttl and send")
-		if ttl_from_target_to_source>30 then  	--avoid too big ttl
+		if ttl_from_target_to_source>33 then  	--avoid too big ttl
 			set_ttl=15
 		else
 			set_ttl=ttl_from_target_to_source
@@ -305,8 +305,8 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 				else
 					--nothing todo
 				end
-				if set_ttl>35 and set_ttl ~= time_limit_ttl then
-					print(ip,set_ttl,time_limit_ttl,"one step move more than 30")
+				if set_ttl>33then
+					print(ip,set_ttl,time_limit_ttl,"one step move more than 33")
 					break
 				end
 			end
@@ -331,8 +331,8 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 				else
 					--nothing todo
 				end
-				if set_ttl>30 and set_ttl ~= time_limit_ttl then
-					print(ip,set_ttl,time_limit_ttl,"one step move more than 30")
+				if set_ttl>33 then
+					print(ip,set_ttl,time_limit_ttl,"one step move more than 33")
 					break
 				end
 			end
@@ -357,6 +357,12 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 	if guess_ttl>1 and ttl_from_target_to_source>0 then
 		send_number=send_number+1
 		print(ip,guess_ttl,ttl_from_target_to_source,"difference:",guess_ttl-ttl_from_target_to_source,send_number,left_ttl)
+	else
+		if echo_reply_ttl ~=-1 then
+			print(ip,"guest_network_distance ONLY_ECHO_REPLY",echo_reply_ttl,time_limit_ttl)
+		else
+			print(ip,"guest_network_distance NO_ECHO_REPLY",echo_reply_ttl,time_limit_ttl)
+		end
 	end
 	return guess_ttl
 	-- body

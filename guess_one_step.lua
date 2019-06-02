@@ -333,6 +333,12 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 	if guess_ttl>1 and ttl_from_target_to_source>0 then
 		send_number=send_number+1	--first ping
 		print(ip,guess_ttl,ttl_from_target_to_source,"difference:",guess_ttl-ttl_from_target_to_source,send_number,left_ttl)
+	else
+		if echo_reply_ttl ~=-1 then
+			print(ip,"guest_network_distance ONLY_ECHO_REPLY",echo_reply_ttl,time_limit_ttl)
+		else
+			print(ip,"guest_network_distance NO_ECHO_REPLY",echo_reply_ttl,time_limit_ttl)
+		end
 	end
 	return guess_ttl
 	-- body
