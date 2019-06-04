@@ -73,7 +73,7 @@ local function method_control(dst_ip,iface,result,ctrl_info,send_l3_sock,VERBOSE
 		--udp和步进 平均发包大于步进
 		if  udp_and_one_step_is_not_better(ctrl_info) ==1 then
 			--步进发包大于5，使用二分
-			if (ctrl_info['one_step_send']/ctrl_info['one_step_get']) > 5 then
+			if (ctrl_info['one_step_send']/ctrl_info['one_step_get']) > 5 and ctrl_info['all_get'] >100 then
 				ctrl_info['now_method']=2
 			else
 				--步进发包小于5，使用步进
@@ -98,7 +98,7 @@ local function method_control(dst_ip,iface,result,ctrl_info,send_l3_sock,VERBOSE
 	--进入步进法的决策
 	if ctrl_info['now_method'] == 1 then
 		last_hop_one_step(dst_ip,iface,ctrl_info,send_l3_sock,VERBOSE)--步进
-		if (ctrl_info['one_step_send']/ctrl_info['one_step_get']) > 5 then
+		if (ctrl_info['one_step_send']/ctrl_info['one_step_get']) > 5 and ctrl_info['all_get'] >100 then
 			ctrl_info['now_method']=2
 		end
 	end
