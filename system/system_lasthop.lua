@@ -67,14 +67,6 @@ local function method_control(dst_ip,iface,result,ctrl_info,send_l3_sock,VERBOSE
 	local last_hop_condvar = nmap.condvar(result)
 	--udp和步进平均发包大于步进单独平均发包
 	-- now_method   --0 udp和步进;1 步进；2 二分，3 udp和二分
-	all_send=(ctrl_info['udp_send']+ctrl_info['one_step_send']+ctrl_info['binrary_send'])
-	all_get=(ctrl_info['udp_get']+ctrl_info['one_step_get']+ctrl_info['binrary_get'])
-
-	print("all      send,get,avg",all_send,all_get,all_send/all_get)
-	print("udp      send,get,avg",ctrl_info['udp_send'],ctrl_info['udp_get'],ctrl_info['udp_send']/ctrl_info['udp_get'])
-	print("one_step send,get,avg",ctrl_info['one_step_send'],ctrl_info['one_step_get'],ctrl_info['one_step_send']/ctrl_info['one_step_get'])
-	print("binrary  send,get,avg",ctrl_info['binrary_send'],ctrl_info['binrary_get'],ctrl_info['binrary_send']/ctrl_info['binrary_get'])
-	print("trace    send,get,avg",ctrl_info['traceroute_send'],all_get,ctrl_info['traceroute_send']/all_get)
 	--进入默认方法upd和步进的决策
 	if ctrl_info['now_method'] ==0 then
 		last_hop_combine_one_step(dst_ip,iface,ctrl_info,send_l3_sock,VERBOSE)
@@ -135,6 +127,9 @@ action=function()
 	local VERBOSE=stdnse.get_script_args("verbose")
 	local thread_count=15
 	thread_count=stdnse.get_script_args("thread")
+	if thread_count==nil then
+		thread_count=15
+	end
 	thread_count=tonumber(thread_count)
 	VERBOSE=tonumber(VERBOSE)
 	if (not dst_ip)  and (not ip_file) then
@@ -181,7 +176,7 @@ action=function()
 			local ip=line
 			local temp, err = ipOps.expand_ip(ip)
 			if not err then
-				print(ip,ip_count)
+				-- print(ip,ip_count)
 				table.insert(ip_list,ip)
 			else
 				print("error:illege ip:",ip)
@@ -204,6 +199,13 @@ action=function()
 			            last_hop_condvar "wait"
 			        end
 			    until next(last_hop_thread_handler) == nil
+				all_send=(ctrl_info['udp_send']+ctrl_info['one_step_send']+ctrl_info['binrary_send'])
+				all_get=(ctrl_info['udp_get']+ctrl_info['one_step_get']+ctrl_info['binrary_get'])
+				print("all      send,get,avg",all_send,all_get,all_send/all_get)
+				print("udp      send,get,avg",ctrl_info['udp_send'],ctrl_info['udp_get'],ctrl_info['udp_send']/ctrl_info['udp_get'])
+				print("one_step send,get,avg",ctrl_info['one_step_send'],ctrl_info['one_step_get'],ctrl_info['one_step_send']/ctrl_info['one_step_get'])
+				print("binrary  send,get,avg",ctrl_info['binrary_send'],ctrl_info['binrary_get'],ctrl_info['binrary_send']/ctrl_info['binrary_get'])
+				print("trace    send,get,avg",ctrl_info['traceroute_send'],all_get,ctrl_info['traceroute_send']/all_get)
 			    ip_list={}
 			end--end of if #ip_list>=15
 		end--end of for
