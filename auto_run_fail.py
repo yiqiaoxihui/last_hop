@@ -17,29 +17,28 @@ print file_path
 # 		l.append(line)
 # fr.close()
 last_hop=set()
-for i in range(0,10):
+for i in range(0,20):
 	time.sleep(3)
 	left=set()
 	action=set()
-
-	cmd="nmap -sn -n -e eno2 --script /home/ly/nmap_script/last_hop_guest_ttl.lua -iL "+file_path
+	cmd="nmap -sn -n -e eno2 --script /home/ly/nmap_script/last_hop/guess_one_step.lua --max-hostgroup 50 -iL "+file_path
 	cmd = shlex.split(cmd)
 	p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 	while p.poll() is None:
 		line = p.stdout.readline()
 		line = line.strip()
 		if line:
-			print(line)
 			if "action" in line:
 				action.add(line.split()[1])
-			elif line[0]=="#":
-				print "turns:"+str(i)
+			elif "difference" in line:
+				# print "turns:"+str(i)
 				#print line
-				last_hop.add(line.split()[3])
+				last_hop.add(line.split()[0])
 			else:
 				pass
 	if p.returncode == 0:
 		print('Subprogram success')
+		print i
 		left=action.difference(last_hop)
 		print "action:"+str(len(action))
 		print "last_hop:"+str(len(last_hop))

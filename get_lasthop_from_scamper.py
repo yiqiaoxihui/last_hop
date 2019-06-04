@@ -16,6 +16,7 @@ def get_link_node_from_dir():
 	all_packet=0
 	# for file in list_dir:
 	all_time=0
+	lh_set=set()
 	fw=open(sys.argv[2],'w')
 	if True:
 		fr=open(sys.argv[1],'r')
@@ -41,8 +42,9 @@ def get_link_node_from_dir():
 					if len_hops<=1:
 						continue
 					if (int)(hops[len_hops-2]['probe_ttl']) +1  == int(hops[len_hops-1]['probe_ttl']) and jo['dst'] == hops[len_hops-1]['addr']:
-						print jo['dst'],hops[len_hops-2]['addr']
+						# print jo['dst'],hops[len_hops-2]['addr']
 						last_hop_count+=1
+						lh_set.add(hops[len_hops-2]['addr'])
 						if jo.has_key('probe_count'):
 							all_packet+=int(jo['probe_count'])
 						fw.write(jo['dst']+" "+hops[len_hops-2]['addr'])
@@ -54,6 +56,9 @@ def get_link_node_from_dir():
 	print "avg:",all_packet*1.0/last_hop_count
 	print "time",all_time
 		# print i,item
-
+	rlh=0
+	for i in lh_set:
+		rlh+=1
+	print "unique lasthop",rlh
 if __name__ == '__main__':
 	get_link_node_from_dir()

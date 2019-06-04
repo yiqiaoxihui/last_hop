@@ -42,7 +42,7 @@ hostrule=function(host)
 end
 portrule = function(host)
 --return true
-	print("portrule:",host.ip)
+	-- print("portrule:",host.ip)
 --return port.state=="closed" 
 end
 local function set_ttl_to_ping(iface,send_l3_sock,dst_ip,ttl)
@@ -194,7 +194,7 @@ stdnse.sleep(2) 	--test,需要缓冲时间，保证线程全部启动
 --用于发送udp大端口报文
 print("\n\nsend upd big port packet")
 local send_udp_socket=nmap.new_socket("udp")
-send_udp_socket:sendto(host.ip,65534,"")
+send_udp_socket:sendto(host.ip,65533,'')
 
 -- stdnse.sleep(2) 	--test,
 -- if icmp_tole_listener_signal['last_hop']==1 then

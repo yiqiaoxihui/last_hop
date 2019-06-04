@@ -16,20 +16,26 @@ file_path_pu=file_path+".pu"
 file_path_udp=file_path+".udp"
 # file_path_gs=file_path+".guess_lasthop_success"
 file_path_dv=file_path+".division"
-fwl=open(file_path_l,'w')
-fwa=open(file_path_a,'w')
-fwf=open(file_path_f,'w')
 
-fwpu=open(file_path_pu,'w')
-fwudp=open(file_path_udp,'w')
 # fwgs=open(file_path_gs,'w')
-fwdv=open(file_path_dv,'w')
+
 file_path_first=file_path+".first"
-fw_first=open(file_path_first,'w')
+
 file_path_trace_success=file_path+".trace_succss"
-fw_trace_success=open(file_path_trace_success,'w')
+
 file_path_oss=file_path+".one_step_success"
-fw_oss=open(file_path_oss,'w')
+if sys.argv[2] == "1":
+	fwl=open(file_path_l,'w')
+	fwa=open(file_path_a,'w')
+	fwf=open(file_path_f,'w')
+
+	fwpu=open(file_path_pu,'w')
+	fwudp=open(file_path_udp,'w')
+	fw_trace_success=open(file_path_trace_success,'w')
+	fw_first=open(file_path_first,'w')
+	fwdv=open(file_path_dv,'w')
+	fw_oss=open(file_path_oss,'w')
+
 first_send_ping_predict_ttl_no_reply=0
 one_step_success=0
 set_ttl_and_send=0
@@ -78,30 +84,38 @@ while True:
 		break
 	if "action" in line:
 		action=action+1
-		fwa.write(line.split()[1]+"\n")
+		if sys.argv[2] == "1":
+			fwa.write(line.split()[1]+"\n")
 	elif "guest_ttl_fail" in line:
 		guest_ttl_fail=guest_ttl_fail+1
-		fwf.write(line.split()[0]+"\n")
+		if sys.argv[2] == "1":
+			fwf.write(line.split()[0]+"\n")
 	elif "#get_last_hop" in line:
 		last_hop_count=last_hop_count+1
-		fwl.write(line.split()[1]+" "+line.split()[3]+"\n")
+		if sys.argv[2] == "1":
+			fwl.write(line.split()[1]+" "+line.split()[3]+"\n")
 		last_hop_set.add(line.split()[1])
 	elif ("icmp pu") in line:
 		icmp_pu=icmp_pu+1
-		fwpu.write(line.split()[2]+"\n")
+		if sys.argv[2] == "1":
+			fwpu.write(line.split()[2]+"\n")
 	elif "traceroute guess success" in line:
 		traceroute_success=traceroute_success+1
-		fw_trace_success.write(line.split()[0]+"\n")
+		if sys.argv[2] == "1":
+			fw_trace_success.write(line.split()[0]+"\n")
 	elif  "traceroute guess fail" in line:
 		traceroute_fail=traceroute_fail+1
 	elif "division to guest ttl success" in line:
 		division_to_guest_ttl_success=division_to_guest_ttl_success+1
-		fwdv.write(line.split()[0]+"\n")
+		if sys.argv[2] == "1":		
+			fwdv.write(line.split()[0]+"\n")
 	elif "first predict ttl by ping fail,no receive reply" in line:
 		first_ping_no_reply=first_ping_no_reply+1
-		fw_first.write(line.split()[0]+"\n")
+		if sys.argv[2] == "1":
+			fw_first.write(line.split()[0]+"\n")
 	elif "udp_to_get_last_hop" in line:
-		fwudp.write(line.split()[0]+"\n")
+		if sys.argv[2] == "1":
+			fwudp.write(line.split()[0]+"\n")
 		udp_to_get_last_hop=udp_to_get_last_hop+1
 	elif "begin to guest ttl" in line:
 		all_guest=all_guest+1
@@ -127,7 +141,8 @@ while True:
 		# fwgs.write(ip+"\n")
 		guess_lasthop_success=guess_lasthop_success+1
 		one_step_success=one_step_success+1
-		fw_oss.write(line.split()[0]+"\n")
+		if sys.argv[2] == "1":		
+			fw_oss.write(line.split()[0]+"\n")
 	elif "set ttl and send" in line:
 		set_ttl_and_send=set_ttl_and_send+1
 	elif "last hop no reply,no need to traceroute" in line:
@@ -201,13 +216,13 @@ print "m2_send_packet_test",m2_send_packet_test
 print "action:",
 print action
 
-print "get last hop count:",
+print "r get last hop count:",
 print last_hop_count,len(last_hop_set),last_hop_count*1.0/action
 
 print "***************************icmp****************************"
 print "receive upd port unreachable:",icmp_pu,icmp_pu*1.0/action
 print "--receive port unreachable,but last hop no reply:",but_no_reply,but_no_reply*1.0/action
-print "--upd get_last_hop,zhanbi",icmp_pu-but_no_reply,udp_to_get_last_hop,(icmp_pu-but_no_reply)*1.0/action
+print "--icmp_pu-but_no_reply,upd_get_last_hop,zhanbi",icmp_pu-but_no_reply,udp_to_get_last_hop,(icmp_pu-but_no_reply)*1.0/action
 
 print "***************************guess****************************"
 print "number need to guest:",all_guest,all_guest*1.0/action
@@ -257,8 +272,8 @@ if all_guest==0:
 	print "\nall my average send packet:",
 	print method_2_send*1.0/(udp_to_get_last_hop+one_step_success)
 else:
-	print action+icmp_pu+method_2_send
-	print action,icmp_pu,method_2_send
+	print action+udp_to_get_last_hop+method_2_send
+	print action,udp_to_get_last_hop,method_2_send
 	print "\nall my average send packet:",
 	print (action+udp_to_get_last_hop+method_2_send)*1.0/(udp_to_get_last_hop+one_step_success)
 # print icmp_pu+set_ttl_and_send+action+all_guest
@@ -275,15 +290,16 @@ print "method2 traceroute:",method_2_guess_success_traceroute_send
 # print "have_guessed_no_get_again:",
 # print have_guessed_no_get_again,100*have_guessed_no_get_again/guest_ttl_success
 fr.close()
-fwl.close()
-fwf.close()
-fwa.close()
+if sys.argv[2] == "1":
+	fwl.close()
+	fwf.close()
+	fwa.close()
 
-fwpu.close()
-fwudp.close()
-# fwgs.close()
-fw_first.close()
-fwdv.close()
-fw_oss.close()
+	fwpu.close()
+	fwudp.close()
+	# fwgs.close()
+	fw_first.close()
+	fwdv.close()
+	fw_oss.close()
 
 
