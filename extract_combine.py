@@ -200,7 +200,7 @@ for i in range(1,200):
 m2_send_packet_test=0
 for key in difference:
 	m2_send_packet_test+=send_pack_dic[key]*len(difference[key])
-	print key,len(difference[key]),len(difference[key])*100.0/p_sum
+	print key,len(difference[key]),len(difference[key])*1.0/p_sum
 	one_step_sum=one_step_sum+(key+1)*len(difference[key])
 	get_and_ping_reply+=len(difference[key])
 print "m2_send_packet_test",m2_send_packet_test
@@ -275,7 +275,7 @@ else:
 	print action+udp_to_get_last_hop+method_2_send
 	print action,udp_to_get_last_hop,method_2_send
 	print "\nall my average send packet:",
-	print (action+udp_to_get_last_hop+method_2_send)*1.0/((udp_to_get_last_hop+one_step_success)*100)
+	print (action+udp_to_get_last_hop+method_2_send)*1.0/(udp_to_get_last_hop+one_step_success)
 # print icmp_pu+set_ttl_and_send+action+all_guest
 
 
