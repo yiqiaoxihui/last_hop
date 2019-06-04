@@ -275,7 +275,7 @@ else:
 	print action+udp_to_get_last_hop+method_2_send
 	print action,udp_to_get_last_hop,method_2_send
 	print "\nall my average send packet:",
-	print (action+udp_to_get_last_hop+method_2_send)*1.0/(udp_to_get_last_hop+one_step_success)
+	print (action+udp_to_get_last_hop+method_2_send)*1.0/((udp_to_get_last_hop+one_step_success)*100)
 # print icmp_pu+set_ttl_and_send+action+all_guest
 
 
