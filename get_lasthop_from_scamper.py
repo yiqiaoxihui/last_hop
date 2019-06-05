@@ -47,7 +47,7 @@ def get_link_node_from_dir():
 						lh_set.add(hops[len_hops-2]['addr'])
 						if jo.has_key('probe_count'):
 							all_packet+=int(jo['probe_count'])
-						fw.write(jo['dst']+" "+hops[len_hops-2]['addr'])
+						fw.write(jo['dst']+" "+hops[len_hops-2]['addr']+"\n")
 		fr.close()
 
 	fw.close()
