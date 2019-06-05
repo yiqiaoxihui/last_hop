@@ -5,7 +5,7 @@ import subprocess
 import time
 file_path=sys.argv[2]
 print file_path
-
+fw1=open(sys.argv[3],'w')
 last_hop=set()
 for i in range(0,10):
 	time.sleep(3)
@@ -34,6 +34,11 @@ for i in range(0,10):
 		print "now action:",(len(action))
 		print "last_hop:",(len(last_hop))
 		print "left:",(len(left))
+		fw1.write(str(i)+"\n")
+		fw1.write("action:"+str(len(action))+"\n")
+		fw1.write("last_hop:"+str(len(last_hop))+"\n")
+		fw1.write("left:"+str(len(left))+"\n")
+		fw1.flush()
 		if len(left)==0:
 			print "all ip get last_hop"
 			break
@@ -46,4 +51,7 @@ for i in range(0,10):
 		print('Subprogram failed')
 		print i
 		break
+fw1.close()
+
+
 
