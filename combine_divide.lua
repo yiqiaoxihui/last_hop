@@ -212,7 +212,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 	local send_number=0
 	local guess_ttl=0
 	local left_ttl=3
-	local right_ttl=32
+	local right_ttl=33
 	local deviation_fail=0
 	local time_limit_ttl=-1		--max time limit ttl
 	local echo_reply_ttl=-1		--min echo reply ttl
@@ -232,7 +232,7 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 			end
 		elseif icmp_tole_listener_signal['receive']==true then
 			print(ip,mid_ttl,"receive icmp time limit")
-			if mid_ttl>=32 then 			--认为没有大于35跳的路由
+			if mid_ttl>=33 then 			--认为没有大于35跳的路由
 				mid_ttl=-1
 				print(ip," hop more than 30")
 				break
@@ -243,11 +243,13 @@ function guest_network_distance(iface,send_l3_sock,icmp_echo_listener_signal,icm
 			end
 		else
 			print(ip,mid_ttl,"send again")
-			left_ttl=left_ttl+1  --默认未到达目标，中间路由器未回应，进一步扩大ttl
+			left_ttl=mid_ttl+1  --默认未到达目标，中间路由器未回应，进一步扩大ttl
 			times=times+1
-			if times>2 then
-				break
-			end
+			-- left_ttl=left_ttl+1  --默认未到达目标，中间路由器未回应，进一步扩大ttl
+			-- times=times+1
+			-- if times>2 then
+			-- 	break
+			-- end
 			--mid_ttl=mid_ttl+0.1		--ip:90.196.109.225, left_ttl=9,right_ttl=10, mid_ttl=9,no any reply
 		end
 		if echo_reply_ttl == (time_limit_ttl+1) then
