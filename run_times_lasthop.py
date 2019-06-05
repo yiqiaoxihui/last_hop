@@ -5,7 +5,7 @@ import subprocess
 import time
 file_path=sys.argv[2]
 print file_path
-fw1=open(sys.argv[3],'w')
+fw1=open(sys.argv[2]+".result",'w')
 last_hop=set()
 for i in range(0,10):
 	time.sleep(3)
