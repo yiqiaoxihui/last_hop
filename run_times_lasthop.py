@@ -11,7 +11,7 @@ for i in range(0,10):
 	time.sleep(3)
 	left=set()
 	action=set()
-	cmd="nmap -sn -n -e eno2 --script /home/ly/nmap_script/last_hop/"+sys.argv[1]+" --min-hostgroup 50 -iL "+file_path
+	cmd="nmap -sn -n -e eno2 --script "+sys.argv[1]+" --min-hostgroup 50 -iL "+file_path
 	cmd = shlex.split(cmd)
 	p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 	while p.poll() is None:
