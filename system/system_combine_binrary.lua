@@ -163,6 +163,7 @@ local function icmp_tole_listener(signal,ip,iface,VERBOSE)
 					if k=="ip_src" then
 						if VERBOSE >=0 then
 							print("#get_last_hop",ip,dst_ip,v)
+							print(ip,"difference")
 						end
 					end
 				end				
@@ -318,7 +319,7 @@ end
 --action = function(host, port)
 
 function last_hop_combine_binrary(dst_ip,iface,ctrl_info,send_l3_sock,VERBOSE)
-	print("last_hop_combine_binrary:",dst_ip)
+	print("action last_hop_combine_binrary:",dst_ip)
 	--建立发送l3层报文的raw socket
 	--用于发送设置了ttl的探测末跳报文
 	-- local send_l3_sock = nmap.new_dnet()
