@@ -6,9 +6,10 @@ import time
 if sys.argv[4] == "1":
 	file_path=sys.argv[2]
 	print file_path
-	fw1=open(sys.argv[2]+".result",'a')
+	fw1=open(sys.argv[2]+".runtimeresult",'a') #no change
+	fw1.write(sys.argv[1]+"\n") #which method
 	last_hop=set()
-	for i in range(0,10):
+	for i in range(0,9):
 		time.sleep(3)
 		left=set()
 		action=set()
@@ -36,7 +37,6 @@ if sys.argv[4] == "1":
 			print "last_hop:",(len(last_hop))
 			print "left:",(len(left))
 			fw1.write(str(i)+"\n")
-			fw1.write(cmdstr+"\n")
 			fw1.write("action:"+str(len(action))+"\n")
 			fw1.write("last_hop:"+str(len(last_hop))+"\n")
 			fw1.write("left:"+str(len(left))+"\n")
@@ -44,6 +44,9 @@ if sys.argv[4] == "1":
 			if len(left)==0:
 				print "all ip get last_hop"
 				break
+			if i==0:
+				# sn=sys.argv[2].split('/')[-1]
+				file_path=file_path+".leftip"
 			fw=open(file_path,'w')
 			for ip in left:
 				fw.write(ip+"\n")
@@ -57,8 +60,9 @@ if sys.argv[4] == "1":
 else:
 	file_path=sys.argv[2]
 	print file_path
-	fw1=open(sys.argv[2]+".result",'a')
+	fw1=open(sys.argv[2]+".runtimeresult",'a')
 	last_hop=set()
+	fw1.write(sys.argv[1]+"\n")
 	for i in range(0,10):
 		left=set()
 		action=set()
@@ -90,7 +94,7 @@ else:
 			print "last_hop:",(len(last_hop))
 			print "left:",(len(left))
 			fw1.write(str(i)+"\n")
-			fw1.write(cmdstr+"\n")
+			
 			fw1.write("action:"+str(len(action))+"\n")
 			fw1.write("last_hop:"+str(len(last_hop))+"\n")
 			fw1.write("left:"+str(len(left))+"\n")
@@ -98,6 +102,9 @@ else:
 			if len(left)==0:
 				print "all ip get last_hop"
 				break
+			if i==0:
+				# sn=sys.argv[2].split('/')[-1]
+				file_path=file_path+".leftip"
 			fw=open(file_path,'w')
 			for ip in left:
 				fw.write(ip+"\n")
