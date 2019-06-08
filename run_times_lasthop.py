@@ -6,14 +6,14 @@ import time
 if sys.argv[4] == "1":
 	file_path=sys.argv[2]
 	print file_path
-	fw1=open(sys.argv[2]+".result",'w')
+	fw1=open(sys.argv[2]+".result",'a')
 	last_hop=set()
 	for i in range(0,10):
 		time.sleep(3)
 		left=set()
 		action=set()
-		cmd="nmap -sn -n -e "+sys.argv[3]+" --script "+sys.argv[1]+" --min-hostgroup 50 -iL "+file_path
-		cmd = shlex.split(cmd)
+		cmdstr="nmap -sn -n -e "+sys.argv[3]+" --script "+sys.argv[1]+" --min-hostgroup 50 -iL "+file_path
+		cmd = shlex.split(cmdstr)
 		p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		while p.poll() is None:
 			line = p.stdout.readline()
@@ -36,6 +36,7 @@ if sys.argv[4] == "1":
 			print "last_hop:",(len(last_hop))
 			print "left:",(len(left))
 			fw1.write(str(i)+"\n")
+			fw1.write(cmdstr+"\n")
 			fw1.write("action:"+str(len(action))+"\n")
 			fw1.write("last_hop:"+str(len(last_hop))+"\n")
 			fw1.write("left:"+str(len(left))+"\n")
@@ -56,15 +57,15 @@ if sys.argv[4] == "1":
 else:
 	file_path=sys.argv[2]
 	print file_path
-	fw1=open(sys.argv[2]+".result",'w')
+	fw1=open(sys.argv[2]+".result",'a')
 	last_hop=set()
 	for i in range(0,10):
-		time.sleep(3)
 		left=set()
 		action=set()
-		cmd="nmap -sn -n -e "+sys.argv[3]+" --script "+sys.argv[1]+"--script-args='verbose=0,thread=50,ip_file="+file_path+"'"
+		cmdstr="nmap -sn -n -e "+sys.argv[3]+" --script "+sys.argv[1]+" --script-args='verbose=0,thread=100,ip_file="+file_path+"'"
 		# cmd='nmap -sn -n -e eno2 --script system_lasthop.lua --script-args="verbose=0,thread=50,ip_file=ip.6w"'
-		cmd = shlex.split(cmd)
+		print cmdstr
+		cmd = shlex.split(cmdstr)
 		print cmd
 		p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		while p.poll() is None:
@@ -83,11 +84,13 @@ else:
 		if p.returncode == 0:
 			print('Subprogram success')
 			print i
+			print "action",len(action)
 			left=action.difference(last_hop)
 			print "now action:",(len(action))
 			print "last_hop:",(len(last_hop))
 			print "left:",(len(left))
 			fw1.write(str(i)+"\n")
+			fw1.write(cmdstr+"\n")
 			fw1.write("action:"+str(len(action))+"\n")
 			fw1.write("last_hop:"+str(len(last_hop))+"\n")
 			fw1.write("left:"+str(len(left))+"\n")
@@ -104,4 +107,5 @@ else:
 			print('Subprogram failed')
 			print i
 			break
+		time.sleep(3)
 	fw1.close()

@@ -276,7 +276,7 @@ end
 --action = function(host, port)
 
 function last_hop_binrary(dst_ip,iface,ctrl_info,send_l3_sock,VERBOSE)
-	print("action last_hop_binrary:",dst_ip)
+	print("action-last_hop_binrary:",dst_ip)
 	--建立发送l3层报文的raw socket
 	--用于发送设置了ttl的探测末跳报文
 	-- local send_l3_sock = nmap.new_dnet()
