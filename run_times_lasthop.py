@@ -60,7 +60,7 @@ if sys.argv[4] == "1":
 else:
 	file_path=sys.argv[2]
 	print file_path
-	fw1=open(sys.argv[2]+".runtimeresult",'a')
+	fw1=open(sys.argv[2]+".systemrun",'a')
 	last_hop=set()
 	fw1.write(sys.argv[1]+"\n")
 	for i in range(0,10):
@@ -94,7 +94,6 @@ else:
 			print "last_hop:",(len(last_hop))
 			print "left:",(len(left))
 			fw1.write(str(i)+"\n")
-			
 			fw1.write("action:"+str(len(action))+"\n")
 			fw1.write("last_hop:"+str(len(last_hop))+"\n")
 			fw1.write("left:"+str(len(left))+"\n")
