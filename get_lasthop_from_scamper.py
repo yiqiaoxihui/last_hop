@@ -42,11 +42,10 @@ def get_link_node_from_dir():
 					if len_hops<=1:
 						continue
 					if (int)(hops[len_hops-2]['probe_ttl']) +1  == int(hops[len_hops-1]['probe_ttl']) and jo['dst'] == hops[len_hops-1]['addr']:
-						# print jo['dst'],hops[len_hops-2]['addr']
+						print jo['dst'],hops[len_hops-2]['addr']
 						last_hop_count+=1
 						lh_set.add(hops[len_hops-2]['addr'])
-						if jo.has_key('probe_count'):
-							all_packet+=int(jo['probe_count'])
+						all_packet+=len_hops
 						fw.write(jo['dst']+" "+hops[len_hops-2]['addr']+"\n")
 		fr.close()
 
