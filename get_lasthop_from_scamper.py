@@ -52,7 +52,7 @@ def get_link_node_from_dir():
 
 	fw.close()
 	print "last_hop_count:",last_hop_count
-	print "all_packet:",all_packet
+	print "all_packet:",all_packet,last_hop_count*1.0/all_packet
 	print "avg:",all_packet*1.0/last_hop_count
 	print "time",all_time
 		# print i,item
