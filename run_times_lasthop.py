@@ -4,22 +4,25 @@ import shlex
 import subprocess
 import time
 if sys.argv[4] == "1":
-	file_path=sys.argv[2]
+	run_typ=sys.argv[1]
+	file_path=sys.argv[2] #ip file
+	iface=sys.argv[3]
 	print file_path
-	fw1=open(sys.argv[2]+".runtimeresult",'a') #no change
-	fw1.write(sys.argv[1]+"\n") #which method
+	typ=run_typ.split('/')[-1]
+	fw1=open(typ+".runtimeresult",'a') #no change
+	fw1.write(run_typ+"\n") #which method
 	last_hop=set()
 	for i in range(0,9):
 		time.sleep(3)
 		left=set()
 		action=set()
-		cmdstr="nmap -sn -n -e "+sys.argv[3]+" --script "+sys.argv[1]+" --min-hostgroup 50 -iL "+file_path
+		cmdstr="nmap -sn -n -e "+iface+" --script "+run_typ+" --min-hostgroup 50 -iL "+file_path
 		cmd = shlex.split(cmdstr)
 		p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		while p.poll() is None:
 			line = p.stdout.readline()
 			line = line.strip()
-			# print line
+			print line
 			if line:
 				if "action" in line:
 					action.add(line.split()[1])
@@ -52,6 +55,10 @@ if sys.argv[4] == "1":
 				fw.write(ip+"\n")
 			fw.flush()
 			fw.close()
+			fw2=open(file_path+'.lasthop','w')
+			for ip in last_hop:
+				fw2.write(ip+"\n")
+			fw2.close()
 		else:
 			print('Subprogram failed')
 			print i
@@ -109,6 +116,10 @@ else:
 				fw.write(ip+"\n")
 			fw.flush()
 			fw.close()
+			fw2=open(file_path+'.lasthop','w')
+			for ip in last_hop:
+				fw2.write(ip+"\n")
+			fw2.close()
 		else:
 			print('Subprogram failed')
 			print i
