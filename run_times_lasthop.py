@@ -49,13 +49,13 @@ if sys.argv[4] == "1":
 				break
 			if i==0:
 				# sn=sys.argv[2].split('/')[-1]
-				file_path=run_typ+".leftip"
+				file_path=typ+".leftip"
 			fw=open(file_path,'w')
 			for ip in left:
 				fw.write(ip+"\n")
 			fw.flush()
 			fw.close()
-			fw2=open(run_typ+'.lasthop','w')
+			fw2=open(typ+'.lasthop','w')
 			for ip in last_hop:
 				fw2.write(ip+"\n")
 			fw2.close()
@@ -68,6 +68,7 @@ else:
 	run_typ=sys.argv[1]
 	file_path=sys.argv[2] #ip file
 	iface=sys.argv[3]
+	typ=run_typ.split('/')[-1]
 	print file_path
 	fw1=open(typ+".systemrun",'a')
 	last_hop=set()
@@ -112,13 +113,13 @@ else:
 				break
 			if i==0:
 				# sn=sys.argv[2].split('/')[-1]
-				file_path=run_typ+".leftip"
+				file_path=typ+".leftip"
 			fw=open(file_path,'w')
 			for ip in left:
 				fw.write(ip+"\n")
 			fw.flush()
 			fw.close()
-			fw2=open(run_typ+'.lasthop','w')
+			fw2=open(typ+'.lasthop','w')
 			for ip in last_hop:
 				fw2.write(ip+"\n")
 			fw2.close()
