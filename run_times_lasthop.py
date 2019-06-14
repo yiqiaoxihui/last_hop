@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 import os
 import sys
 import shlex
@@ -49,34 +50,31 @@ if sys.argv[4] == "1":
 				break
 			if i==0:
 				# sn=sys.argv[2].split('/')[-1]
-				file_path=typ+".leftip"
+				file_path=file_path+".leftip"
 			fw=open(file_path,'w')
 			for ip in left:
 				fw.write(ip+"\n")
 			fw.flush()
 			fw.close()
-			fw2=open(typ+'.lasthop','w')
-			for ip in last_hop:
-				fw2.write(ip+"\n")
-			fw2.close()
 		else:
 			print('Subprogram failed')
 			print i
 			break
+	fw2=open(file_path+'.lasthop','w')
+	for ip in last_hop:
+		fw2.write(ip+"\n")
+	fw2.close()
 	fw1.close()
 else:
-	run_typ=sys.argv[1]
-	file_path=sys.argv[2] #ip file
-	iface=sys.argv[3]
-	typ=run_typ.split('/')[-1]
+	file_path=sys.argv[2]
 	print file_path
-	fw1=open(typ+".systemrun",'a')
+	fw1=open(sys.argv[2]+".systemrun",'a')
 	last_hop=set()
-	fw1.write(run_typ+"\n")
+	fw1.write(sys.argv[1]+"\n")
 	for i in range(0,10):
 		left=set()
 		action=set()
-		cmdstr="nmap -sn -n -e "+iface+" --script "+run_typ+" --script-args='verbose=1,thread=100,ip_file="+file_path+"'"
+		cmdstr="nmap -sn -n -e "+sys.argv[3]+" --script "+sys.argv[1]+" --script-args='verbose=0,thread=100,ip_file="+file_path+"'"
 		# cmd='nmap -sn -n -e eno2 --script system_lasthop.lua --script-args="verbose=0,thread=50,ip_file=ip.6w"'
 		print cmdstr
 		cmd = shlex.split(cmdstr)
@@ -113,19 +111,19 @@ else:
 				break
 			if i==0:
 				# sn=sys.argv[2].split('/')[-1]
-				file_path=typ+".leftip"
+				file_path=file_path+".leftip"
 			fw=open(file_path,'w')
 			for ip in left:
 				fw.write(ip+"\n")
 			fw.flush()
 			fw.close()
-			fw2=open(typ+'.lasthop','w')
-			for ip in last_hop:
-				fw2.write(ip+"\n")
-			fw2.close()
 		else:
 			print('Subprogram failed')
 			print i
 			break
 		time.sleep(3)
 	fw1.close()
+	fw2=open(file_path+'.lasthop','w')
+	for ip in last_hop:
+		fw2.write(ip+"\n")
+	fw2.close()
