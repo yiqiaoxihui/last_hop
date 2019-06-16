@@ -351,7 +351,7 @@ function last_hop_combine_binrary(dst_ip,iface,ctrl_info,send_l3_sock,VERBOSE)
 	stdnse.sleep(1) 	--test,需要缓冲时间，保证线程全部启动
 	--方法1.发送udp大端口报文，从icmp端口不可达报文中提取网络距离
 	local send_udp_socket=nmap.new_socket("udp")
-	send_udp_socket:sendto(dst_ip,65534,"")
+	send_udp_socket:sendto(dst_ip,33434,"")
 	ctrl_info['udp_send']=ctrl_info['udp_send']+1
 	stdnse.sleep(2)		--test,1s too short to get last_hop message
 	--成功收到最后一跳

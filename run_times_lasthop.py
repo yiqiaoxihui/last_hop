@@ -6,18 +6,18 @@ import subprocess
 import time
 if sys.argv[4] == "1":
 	run_typ=sys.argv[1]
-	file_path=sys.argv[2] #ip file
+	ip_file=sys.argv[2] #ip file
 	iface=sys.argv[3]
-	print file_path
+	print ip_file
 	typ=run_typ.split('/')[-1]
-	fw1=open(typ+".runtimeresult",'a') #no change
+	fw1=open(typ+".runtimes.info",'a') #no change
 	fw1.write(run_typ+"\n") #which method
 	last_hop=set()
 	for i in range(0,9):
 		time.sleep(3)
 		left=set()
 		action=set()
-		cmdstr="nmap -sn -n -e "+iface+" --script "+run_typ+" --min-hostgroup 50 -iL "+file_path
+		cmdstr="nmap -sn -n -Pn -e "+iface+" --script "+run_typ+" --min-hostgroup 50 -iL "+ip_file
 		cmd = shlex.split(cmdstr)
 		p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		while p.poll() is None:
@@ -50,7 +50,7 @@ if sys.argv[4] == "1":
 				break
 			if i==0:
 				# sn=sys.argv[2].split('/')[-1]
-				file_path=file_path+".leftip"
+				file_path=ip_file+"."+typ+".leftip"
 			fw=open(file_path,'w')
 			for ip in left:
 				fw.write(ip+"\n")
@@ -60,21 +60,23 @@ if sys.argv[4] == "1":
 			print('Subprogram failed')
 			print i
 			break
-	fw2=open(file_path+'.lasthop','w')
+	fw2=open(typ+'.lasthop','w')
 	for ip in last_hop:
 		fw2.write(ip+"\n")
 	fw2.close()
 	fw1.close()
 else:
-	file_path=sys.argv[2]
-	print file_path
-	fw1=open(sys.argv[2]+".systemrun",'a')
-	last_hop=set()
-	fw1.write(sys.argv[1]+"\n")
+	run_typ=sys.argv[1]
+	ip_file=sys.argv[2] #ip file
+	iface=sys.argv[3]
+	print ip_file
+	typ=run_typ.split('/')[-1]
+	fw1=open(typ+".runtimes.info",'a') #no change
+	fw1.write(run_typ+"\n") #which method
 	for i in range(0,10):
 		left=set()
 		action=set()
-		cmdstr="nmap -sn -n -e "+sys.argv[3]+" --script "+sys.argv[1]+" --script-args='verbose=0,thread=100,ip_file="+file_path+"'"
+		cmdstr="nmap -sn -n -Pn -e "+iface+" --script "+run_typ+" --script-args='verbose=0,thread=100,ip_file="+ip_file+"'"
 		# cmd='nmap -sn -n -e eno2 --script system_lasthop.lua --script-args="verbose=0,thread=50,ip_file=ip.6w"'
 		print cmdstr
 		cmd = shlex.split(cmdstr)
@@ -111,7 +113,7 @@ else:
 				break
 			if i==0:
 				# sn=sys.argv[2].split('/')[-1]
-				file_path=file_path+".leftip"
+				file_path=ip_file+"."+typ+".leftip"
 			fw=open(file_path,'w')
 			for ip in left:
 				fw.write(ip+"\n")

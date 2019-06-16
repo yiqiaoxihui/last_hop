@@ -409,7 +409,7 @@ action = function(host)
 	stdnse.sleep(1) 	--test,需要缓冲时间，保证线程全部启动
 	--方法1.发送udp大端口报文，从icmp端口不可达报文中提取网络距离
 	local send_udp_socket=nmap.new_socket("udp")
-	send_udp_socket:sendto(host.ip,65534,"")
+	send_udp_socket:sendto(host.ip,33434,"")
 	stdnse.sleep(2)		--test,1s too short to get last_hop message
 	--成功收到最后一跳
 	--error:必须两者同时成立，可能出现并没有收到端口不可达，但是却收到time limit
