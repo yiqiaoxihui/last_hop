@@ -1,18 +1,23 @@
  # -*- coding:utf-8 -*-
+
+#描述：从末跳发现输出信息中，统计发包量，末跳获取量
+#使用方法： python this.py  末跳发现输出信息 数字1/0（1表示统计结果写入文件）
+
 import os
 import sys
 #import decimal
 file_path=sys.argv[1]
 print file_path
 fr=open(file_path,'r')
-
+#执行末跳发现的目标总数
 file_path_a=file_path+".action"
+#获取末跳的信息
 file_path_l=file_path+".lasthop"
 
 file_path_f=file_path+".guest_ttl_fail"
 
-
 file_path_pu=file_path+".pu"
+
 file_path_udp=file_path+".udp"
 # file_path_gs=file_path+".guess_lasthop_success"
 file_path_dv=file_path+".division"
