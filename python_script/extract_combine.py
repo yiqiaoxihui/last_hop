@@ -205,7 +205,8 @@ for i in range(1,200):
 m2_send_packet_test=0
 for key in difference:
 	m2_send_packet_test+=send_pack_dic[key]*len(difference[key])
-	print key,len(difference[key]),len(difference[key])*1.0/p_sum
+	#输出参考距离与网络距离偏差占比
+	# print key,len(difference[key]),len(difference[key])*1.0/p_sum
 	one_step_sum=one_step_sum+(key+1)*len(difference[key])
 	get_and_ping_reply+=len(difference[key])
 print "m2_send_packet_test",m2_send_packet_test
@@ -224,13 +225,13 @@ print action
 print "r get last hop count:",
 print last_hop_count,len(last_hop_set),last_hop_count*1.0/action
 
-print "***************************icmp****************************"
+print "***************************upd 大端口 方法1****************************"
 print "receive upd port unreachable:",icmp_pu,icmp_pu*1.0/action
 print "--receive port unreachable,but last hop no reply:",but_no_reply,but_no_reply*1.0/action
 print "--icmp_pu-but_no_reply,upd_get_last_hop,zhanbi",icmp_pu-but_no_reply,udp_to_get_last_hop,(icmp_pu-but_no_reply)*1.0/action
 
-print "***************************guess****************************"
-print "number need to guest:",all_guest,all_guest*1.0/action
+print "***************************方法2或3****************************"
+print "ip number need to guest:",all_guest,all_guest*1.0/action
 print "guess_lasthop_success:",guess_lasthop_success,len(guest_ttl_success_set),guess_lasthop_success*1.0/last_hop_count
 print "guest ttl fail:",guest_ttl_fail
 print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
@@ -271,20 +272,21 @@ print "method2 average send:",method_2_send*1.0/one_step_success
 
 # print "one_step:",
 # print one_step
-print "\nall my send packet:",
+print "\nlasthop send packet:",
+
 if all_guest==0:
 	print method_2_send
-	print "\nall my average send packet:",
+	print "\n lasthop average send packet:",
 	print method_2_send*1.0/(udp_to_get_last_hop+one_step_success)
 else:
 	print action+udp_to_get_last_hop+method_2_send
 	print action,udp_to_get_last_hop,method_2_send
-	print "\nall my average send packet:",
+	print "\nlasthop average send packet:",
 	print (action+udp_to_get_last_hop+method_2_send)*1.0/(udp_to_get_last_hop+one_step_success)
 # print icmp_pu+set_ttl_and_send+action+all_guest
 
 
-print "traceroute:",traceroute_packet
+print "traceroute send packet:",traceroute_packet
 print "\nall traceroute average send packet:", traceroute_packet*1.0/(udp_to_get_last_hop+one_step_success)
 print "method1 traceroute:",method_1_traceroute_send
 print "method2 traceroute:",method_2_guess_success_traceroute_send
